@@ -1,0 +1,29 @@
+﻿body {
+    background-color: darkgrey;
+}
+
+#navigation {
+    width: 20%;
+    height: 100%;
+}
+
+#main {
+    width: 79%;
+    height: 100%;
+}
+
+.outlined {
+    //border: 1px solid black;
+}
+
+.float-right {
+    float: right;
+}
+
+.float-left {
+    float: left;
+}
+
+.color-default {
+    background-color: white;
+}
