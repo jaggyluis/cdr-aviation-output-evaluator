@@ -1,17 +1,27 @@
-﻿function buildDataNodes(data) {
+﻿
+// helper functions ---
+function buildDataNodes() {
 
     var dataNodes = {};
 
-    for (var i = 0; i < data.length; i++) {
+    for (var i = 0; i < arguments.length; i++) {
 
-        if (!(data[i]["Location ID"] in dataNodes)) {
+        for (var j = 0; j < arguments[i].length; j++) {
 
-            dataNodes[data[i]["Location ID"]] = [];
+            if (!(arguments[i][j]["Location ID"] in dataNodes)) {
+
+                dataNodes[arguments[i][j]["Location ID"]] = {};
+            }
+
+            if (!(i in dataNodes[arguments[i][j]["Location ID"]])) {
+
+                dataNodes[arguments[i][j]["Location ID"]][i] = [];
+            }
+
+            dataNodes[arguments[i][j]["Location ID"]][i].push(arguments[i][j]);
         }
-
-        dataNodes[data[i]["Location ID"]].push(data[i]);
     }
-
+    
     dataNodes = Object.keys(dataNodes).map(function (nodeString, i) {
 
         return buildDataNode(nodeString, dataNodes[nodeString], i);
@@ -42,6 +52,7 @@ function buildDataNode(nodeString, data, index) {
     return dataNode;
 }
 
+// model ---
 function DataNode(point2d, name) {
 
     this._pos = point2d;
@@ -50,8 +61,52 @@ function DataNode(point2d, name) {
 }
 DataNode.prototype = {
 
+    getName: function () {
+
+        return this._name;
+    },
+
     setData: function (data) {
 
         this._data = data;
+    },
+
+    getData: function () {
+       
+        return this._data;
+    },
+
+    findData: function () { // specific to csv
+
+        var data = {};
+
+        for (var scheme in this.getData()) {
+
+            data[scheme] = this.getData()[scheme].find(function (data) {
+
+                return data['Passenger type'] == 'All' &&
+                    data['Value'] == 'MEAN';
+
+            });
+        };
+
+        return data;
+    }
+}
+
+function Model() {
+
+    this._dataNodes = [];
+}
+Model.prototype = {
+
+    setDataNodes: function (dataNodes) {
+
+        this._dataNodes = dataNodes;
+    },
+
+    getDataNodes: function () {
+
+        return this._dataNodes;
     }
 }

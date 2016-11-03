@@ -1,4 +1,4 @@
-
+﻿
 <html>
 
 <head>
@@ -8,14 +8,44 @@
     <link rel="stylesheet" href="css/style.css">
 </head>
 <body>
-    <div id="container">
-        <div id="navigation" class="outlined float-left color-default">
-
+    <div id="container-box">
+        <div id="navigation-box" class="float-left color-default">
+            <div id="navigation-title" class="title">NAVIGATION</div>
         </div>
-        <div id="main" class="outlined float-right color-default">
-
+        <div id="scene-box" class="float-left color-default">
+            <div id="scene-title" class="title">SCENE</div>
+            <div id="scene-frame">
+                
+            </div>
+        </div>
+        <div id="evals-box" class="float-right color-default">
+            <div id="evals-bar" class="title-bar">
+                <div id="evals-title" class="title float-left">EVALUATIONS</div>
+                <div id="evals-settings" class="settings float-right">
+                    <input id="evals-collapsed-input" class="checkbox-input float-left" type="checkbox">
+                    <div id="evals-collapsed-text" class="checkbox-text float-right">COLLAPSED</div>
+                </div>
+            </div>
+            <div id="evals-frame"></div>
         </div>
     </div>
+
+
+    <template id="property-checkbox">
+
+        <div class="property-container">
+            <button class="property-button">%%%</button>
+        </div>
+
+    </template>
+
+    <template id="data-tag">
+
+        <div id="%id%" class="tag">
+            %name%
+        </div>
+
+    </template>
 
     <!-- library imports -->
     <script src="js/lib/d3.v3.min.js"></script>
@@ -24,9 +54,10 @@
     <script src="js/lib/three.js"></script>
     <script src="js/lib/three.OrbitControls.js"></script>
 
+    <script src="js/lib/aviation.min.js"></script>
+
     <!-- app -->
     <script src="js/model.js"></script>
     <script src="js/main.js"></script>
 </body>
-
 </html>

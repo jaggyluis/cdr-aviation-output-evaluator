@@ -1,19 +1,73 @@
 ﻿body {
-    background-color: darkgrey;
+    background-color: #f2f2f2;
+    font-family: Arial, Helvetica, sans-serif;
+    overflow: hidden;
 }
 
-#navigation {
-    width: 20%;
-    height: 100%;
+/*
+    main
+*/
+
+#navigation-box {
+    width: 100%;
+    height: 20px;
 }
 
-#main {
-    width: 79%;
-    height: 100%;
+#scene-box {
+    margin-top: 5px;
+    width: 60%;
+    height: 90%;
 }
+
+#scene-frame {
+    width: 100%;
+    height: 90%;
+}
+
+#evals-box {
+    width: 39.5%;
+    height: 90%;
+    margin-top: 5px;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+#evals-frame {
+    
+}
+
+/*
+    other
+*/
+
+.checkbox-input {
+    height: 10px;
+    margin: 5px;
+}
+
+.checkbox-text {
+    font-size: 10px;
+    padding: 5px 10px 5px 0px;
+}
+
+.title-bar {
+    height: 15px;
+    width: 100%;
+}
+
+.title {
+    font-size: 12px;
+    padding: 5px;
+    height: 15px;
+}
+
+
+/*
+    attributes
+*/
 
 .outlined {
-    //border: 1px solid black;
+    border: 1px solid black;
 }
 
 .float-right {
@@ -26,4 +80,13 @@
 
 .color-default {
     background-color: white;
+}
+
+.tag {
+    font-size: 10px;
+    position: absolute;
+}
+
+svg {
+    border-bottom: 3px solid #f2f2f2;
 }
