@@ -58,6 +58,7 @@ function DataNode(point2d, name) {
     this._pos = point2d;
     this._name = name;
     this._data = {};
+    this._attributes = {};
 }
 DataNode.prototype = {
 
@@ -91,6 +92,21 @@ DataNode.prototype = {
         };
 
         return data;
+    },
+
+    getAttribute: function (key) {
+
+        if (key in this._attributes) {
+            
+            return this._attributes[key];
+        }
+
+        return null;
+    },
+
+    setAttribute: function (key, value) {
+
+        this._attributes[key] = value;
     }
 }
 

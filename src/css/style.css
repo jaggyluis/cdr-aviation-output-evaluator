@@ -61,6 +61,18 @@
     height: 15px;
 }
 
+/*
+    basic types
+*/
+
+svg {
+    border-bottom: 3px solid #f2f2f2;
+}
+
+svg:hover {
+    //border: 1px solid #f2f2f2;
+    background-color: #f2f2f2;
+}
 
 /*
     attributes
@@ -68,6 +80,11 @@
 
 .outlined {
     border: 1px solid black;
+}
+
+.hidden {
+    visibility: hidden;
+    //display: none;
 }
 
 .float-right {
@@ -83,10 +100,11 @@
 }
 
 .tag {
-    font-size: 10px;
+    font-size: 8px;
     position: absolute;
+    border: 1px dotted grey;
 }
 
-svg {
-    border-bottom: 3px solid #f2f2f2;
+.tag:hover {
+    border: 1px solid grey;
 }

@@ -13,7 +13,8 @@ d3.comparator = function(config) {
         fontPadding: 2,
         var1Color: "#cc0000",
         var2Color: "#006699",
-        blendColor: "#ffffff"
+        blendColor: "#ffffff",
+        colors : []
 
     }
 
@@ -29,7 +30,7 @@ d3.comparator = function(config) {
 	    selection = cp.selection = d3.select(selection);
 		
 	    __.data = selection[0][0][0][0].__data__;
-	    __.width = selection[0][0][0][0].clientWidth; // temp
+	    __.width = selection[0][0][0][0].clientWidth;
 	    __.height = __.height ? __.height : 100;
 
 	    cp.svg = selection[0][0]
@@ -37,79 +38,7 @@ d3.comparator = function(config) {
                 .attr("width", __.width)
                 .attr("height", __.height)
         
-	    cp.dataGroup = cp.svg.append("g");
-
-	    var xVals = [],
-            yVals = [];
-
-	    cp.xMax1 = 0,
-        cp.xMax2 = 0;
-
-	    cp.yMax1 = 0,
-        cp.yMax2 = 0;
-        
-	    for (var key in __.data) {
-
-	        __.data[key].forEach(function (d) {
-
-	            if (key % 2 == 0) {
-	                if (d.y > cp.yMax1) {
-                        cp.xMax1 = d.x;
-	                    cp.yMax1 = d.y;
-	                }
-	            }
-	            else if (key % 2 == 1) {
-	                if (d.y > cp.yMax2) {
-	                    cp.xMax2 = d.x;
-	                    cp.yMax2 = d.y;
-	                }
-	            }
-
-	            xVals.push(d.x);
-                yVals.push(d.y)
-	        })
-	    }
-
-	    __.xScale.domain([0, d3.max(xVals)]).range([0, __.width - __.margin.right]);
-	    __.yScale.domain([0, d3.max(yVals)]).range([0, __.height / 4]);
-	    //__.margin.right = __.xScale(xVals[1] - xVals[0]);
-
-	    cp.buildTable();
-
-	    if (!__.collapsed) {
-
-	        for (var key in __.data) {
-
-	            var mul,
-                    color;
-
-	            if (key == 0) {
-	                mul = -1;
-	                color = __.var1Color;
-	            }
-	            else {
-	                mul = 1;
-	                color = __.var2Color;
-	            }
-
-	            cp.dataGroup.append("path")
-                    .attr("d", lineFunc(__.data[key].map(function (d) {
-
-                        return {
-                            x: __.xScale(d.x),
-                            y: mul * __.yScale(d.y) + __.height / 2
-                        }
-
-                    })))
-                    .attr("stroke", "grey")
-                    .attr("stroke-width", 1)
-                    //.attr("opacity", 0.5)
-                    .attr("fill", "none")
-                    .attr("stroke", color)
-	        }
-
-	        cp.buildLegend();
-	    }
+	    cp.build();
       
 	    return cp;
 	}
@@ -209,7 +138,13 @@ d3.comparator = function(config) {
         var xLocations = __.data[0].map(function (d) { return __.xScale(d.x); }),
             delta = xLocations[1] - xLocations[0];
 
-        if (__.collapsed) __.margin.top = 0;
+        if (__.collapsed) {
+            __.margin.top = 0;
+        } else {
+            __.margin.top = 10;
+        }
+
+        __.colors = [];
 
         for (var i = 0; i < xLocations.length ; i++) {
 
@@ -221,6 +156,8 @@ d3.comparator = function(config) {
             } else {
                 color = color_scale2(-val);
             }
+
+            __.colors.push(color);
 
             var height = __.collapsed
                 ? __.height
@@ -238,6 +175,115 @@ d3.comparator = function(config) {
                 .attr("opacity", opacity)
                 .attr("fill", color);
         }
+
+        return cp;
+    }
+
+    cp.build = function () {
+
+        cp.dataGroup = cp.svg.append("g");
+
+        var xVals = [],
+            yVals = [];
+
+        cp.xMax1 = 0,
+        cp.xMax2 = 0;
+
+        cp.yMax1 = 0,
+        cp.yMax2 = 0;
+
+        for (var key in __.data) {
+
+            __.data[key].forEach(function (d) {
+
+                if (key % 2 == 0) {
+                    if (d.y > cp.yMax1) {
+                        cp.xMax1 = d.x;
+                        cp.yMax1 = d.y;
+                    }
+                }
+                else if (key % 2 == 1) {
+                    if (d.y > cp.yMax2) {
+                        cp.xMax2 = d.x;
+                        cp.yMax2 = d.y;
+                    }
+                }
+
+                xVals.push(d.x);
+                yVals.push(d.y)
+            })
+        }
+
+        __.xScale.domain([0, d3.max(xVals)]).range([0, __.width - __.margin.right]);
+        __.yScale.domain([0, d3.max(yVals)]).range([0, __.height / 4]);
+
+        cp.buildTable();
+
+        if (!__.collapsed) {
+
+            for (var key in __.data) {
+
+                var mul,
+                    color;
+
+                if (key == 0) {
+                    mul = -1;
+                    color = __.var1Color;
+                }
+                else {
+                    mul = 1;
+                    color = __.var2Color;
+                }
+
+                cp.dataGroup.append("path")
+                    .attr("d", lineFunc(__.data[key].map(function (d) {
+
+                        return {
+                            x: __.xScale(d.x),
+                            y: mul * __.yScale(d.y) + __.height / 2
+                        }
+
+                    })))
+                    .attr("stroke", "grey")
+                    .attr("stroke-width", 1)
+                    .attr("fill", "none")
+                    .attr("stroke", color)
+            }
+
+            cp.buildLegend();
+        }
+
+        return cp;
+    }
+
+    cp.rebuild = function (bool) {
+
+        cp.svg[0][0].innerHTML = "";
+
+        cp.collapsed(bool).build();
+
+        return cp;
+        
+    }
+
+    cp.width = function(val) {
+
+        __.width = val;
+
+        cp.svg.attr("width", __.width)
+
+        return cp;
+
+    }
+
+    cp.height = function (val) {
+
+        __.height = val;
+
+        cp.svg.attr("height", __.height)
+
+        return cp;
+
     }
 
     cp.title = function (title) {
@@ -270,6 +316,23 @@ d3.comparator = function(config) {
         __.collapsed = bool;
 
         return cp;
+    }
+
+    cp.isCollapsed = function () {
+
+        return __.collapsed;
+    }
+
+    cp.onClick = function (func) {
+
+        cp.svg[0][0].addEventListener("click", func);
+
+        return cp;
+    }
+
+    cp.getColors = function () {
+
+        return __.colors;
     }
 
 	return cp;
