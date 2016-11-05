@@ -12,6 +12,18 @@
         frustum,
         projScreenMatrix;
 
+    var helper = document.getElementById("helper");
+
+    var svg = d3.select(helper)
+        .append("svg")
+        .attr("width", helper.clientWidth)
+        .attr("height", helper.clientHeight);
+
+    var lineFunc = d3.svg.line()
+        .x(function (d) { return d.x; })
+        .y(function (d) { return d.y; })
+        .interpolate('linear');
+
     d3.csv("doc/occupationdata.csv", function (d1) {
 
         d3.csv("doc/occupationdata_rand.csv", function (d2) {
@@ -19,23 +31,45 @@
             model = new Model();
             model.setDataNodes(buildDataNodes(d1, d2));
 
-            init(model.getDataNodes());
+            init(model);
         })
     });
 
-    function init(dataNodes) {
-
-        var evalsCollapsed = document.getElementById("evals-collapsed-input");
+    function init(model) {
 
         buildScene(
             buildEvaluations(
-                dataNodes,
+                model.getDataNodes(),
                 document.getElementById("evals-frame"), true),
             document.getElementById("scene-frame"));
 
-        evalsCollapsed.addEventListener("change", function () {
-            buildEvaluations(dataNodes, document.getElementById("evals-frame"), this.checked);
-        })
+        buildEvaluationSettings();
+    }
+
+    function buildEvaluationSettings(dataNodes) {
+
+        var settingsButton = document.getElementById("evals-settings"),
+            settingsBox = document.getElementById("evals-settings-box");
+
+        var settingsButtonRect = settingsButton.getBoundingClientRect();
+
+        settingsBox.style.left = settingsButtonRect.right -
+            settingsBox.clientWidth - 5 + "px";
+
+        settingsBox.style.top = settingsButtonRect.bottom + "px";
+
+        //console.log(settings)
+
+        settingsButton.addEventListener("mouseenter", function () {
+
+            settingsBox.classList.remove("hidden");
+        });
+
+        settingsButton.addEventListener("mouseleave", function () {
+
+            settingsBox.classList.add("hidden");
+        });
+
     }
 
     function buildEvaluations(dataNodes, domElement, collapsed) {
@@ -47,7 +81,8 @@
         dataNodes.forEach(function (dataNode) {
 
             var data = dataNode.findData(),
-                points = {};
+                points = {},
+                id = aviation.core.string.generateUUID();
 
             for (var scheme in data) {
 
@@ -68,14 +103,14 @@
             }
 
             var height = collapsed ? 10 : 100,
-                comparator = d3.comparator({ height: height }).collapsed(collapsed),
-                name = getName(dataNode);
+                comparator = d3.comparator({ height: height }).collapsed(collapsed);
 
             node.datum(points)
                 .call(comparator);
 
             comparator
-                .title(name)
+                .title(getName(dataNode, !comparator.isCollapsed()))
+                .id(id)
                 .onClick(function () {
 
                     var height = comparator.isCollapsed()
@@ -85,11 +120,12 @@
                     comparator
                         .height(height)
                         .rebuild(!comparator.isCollapsed())
-                        .title(name);
+                        .title(getName(dataNode, !comparator.isCollapsed()));
                 });
 
             dataNode.setAttribute("colors", comparator.getColors());
-
+            dataNode.setAttribute("id", id);
+            dataNode.setAttribute("comparator", comparator);
         });
 
         function isTime(testString) {
@@ -99,26 +135,24 @@
         return dataNodes;
     }
 
+    function buildSceneSettings() {
+
+
+
+    }
+
     function buildScene(dataNodes, domElement) {
 
-        var node = domElement;
-        camera = new THREE.PerspectiveCamera(45, window.innerWidth / window.innerHeight, 1, 2000);
+        var node = domElement,
+            width = node.clientWidth,
+            height = node.clientHeight;
+
+        camera = new THREE.PerspectiveCamera(45, width / height, 1, 2000);
         scene = new THREE.Scene();
-
-        scene.add(new THREE.AmbientLight(0xffffff, 0.3));
-
-        var gridHelper = new THREE.GridHelper(14, 28, 0x303030, 0x303030);
-        gridHelper.position.set(0, -0.04, 0);
-        scene.add(gridHelper);
-
-        var manager = new THREE.LoadingManager();
-        manager.onProgress = function (item, loaded, total) {
-            console.log(item, loaded, total);
-        };
 
         renderer = new THREE.WebGLRenderer();
         renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(node.clientWidth, node.clientHeight);
+        renderer.setSize(width, height);
         renderer.setClearColor(0xffffff);
         node.appendChild(renderer.domElement);
 
@@ -135,31 +169,21 @@
         controls.addEventListener('change', onCameraChange);
         window.addEventListener('resize', onWindowResize, false);
 
-        var points = [],
-            rects = [];
-
         dataNodes.forEach(function (dataNode, i) {
-
-            if (i != 0) return;
 
             var point = buildPoint(dataNode);
             var tag = buildTag(dataNode);
-            //var rect = buildRect(dataNode);
 
             scene.add(point);
-            //scene.add(rect);
-            //rects.push(rect);
-            points.push(point);
-            document.getElementById("scene-box").appendChild(tag);
 
             dataNode.setAttribute("tag", tag);
             dataNode.setAttribute("point", point);
         });
 
-
         document.addEventListener('mousemove', onDocumentMouseMove, false);
 
         animate();
+        onCameraChange();
 
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
@@ -167,47 +191,44 @@
             renderer.setSize(node.clientWidth, node.clientHeight);
         }
 
-        // http://jsfiddle.net/wilt/kgxeuz24/65/
         function onCameraChange() {
 
-            
+            var domElement = document.getElementById("scene-box");
+
             dataNodes.forEach(function (dataNode, i) {
 
-                if (i != 0) return;
-
                 var point = dataNode.getAttribute("point"),
-                    tag = dataNode.getAttribute("tag"),
-                    parent = tag.parentNode;
+                    tag = dataNode.getAttribute("tag");
 
                 var proj = toScreenPosition(point, camera);
 
+                ///
+                /// TODO - this is bad - should be a function of parent
+                ///
                 var posX = 0.82 * proj.x + 'px',
-                    posY = 0.82 * proj.y + 'px';
+                    posY = 0.82 * proj.y + 50 + 'px';
 
                 tag.style.left = posX;
                 tag.style.top = posY;
 
                 projScreenMatrix.multiplyMatrices(camera.projectionMatrix, camera.matrixWorldInverse);
                 frustum.setFromMatrix(projScreenMatrix);
-                if (!frustum.containsPoint(point)) {
-                    console.log("offscreen")
-                }
 
-                var parentRect = parent.getBoundingClientRect(),
-                    tagRect = tag.getBoundingClientRect();
+                if (!frustum.intersectsObject(point)) {
 
-                if (tagRect.top < parentRect.top ||
-                    tagRect.right > parentRect.right ||
-                    tagRect.bottom > parentRect.bottom ||
-                    tagRect.left < parentRect.left) {
-                    tag.classList.add("hidden");
+                    if (domElement.contains(tag)) {
+                        domElement.removeChild(tag);
+                    }
                 }
                 else {
-                    tag.classList.remove("hidden");
-                }
 
-            })
-            
+                    if (!domElement.contains(tag)) {
+                        domElement.appendChild(tag);
+                    }
+                    tag.style.left = posX;
+                    tag.style.top = posY;
+                }
+            });
         }
 
         function toScreenPosition(obj, camera) {
@@ -228,8 +249,7 @@
                 y: vector.y
             };
         }
-
-
+        
         function onDocumentMouseMove(event) {
             event.preventDefault();
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
@@ -242,19 +262,6 @@
         }
 
         function render() {
-
-
-            raycaster.setFromCamera(mouse, camera);
-            intersects = raycaster.intersectObjects(rects, true);
-
-            if (intersects.length > 0) {
-                
-                console.log(intersects);
-
-            } else {
-
-            }
-
             renderer.render(scene, camera);
         }
 
@@ -289,55 +296,134 @@
         return point;
     }
 
-    function buildRect(dataNode) {
-
-        var colors = dataNode.getAttribute("colors");
-
-        var vec = convert(new THREE.Vector3(dataNode._pos.x, dataNode._pos.y, 0))
-
-        var l = 10,
-            w = 10,
-            x = dataNode._pos.x,
-            y = 0,
-            z = -dataNode._pos.y;
-
-        var shape = new THREE.Shape();
-        shape.moveTo(l / 2, -l / 2);
-        shape.lineTo(l / 2, l / 2);
-        shape.lineTo(-l / 2, l / 2);
-        shape.lineTo(-l / 2, -l / 2);
-        shape.lineTo(l / 2, -l / 2);
-
-        var geometry = new THREE.ShapeGeometry(shape);
-
-        var mesh = new THREE.Mesh(geometry,
-            new THREE.MeshLambertMaterial({ color: colors[0], opacity: 1, transparent: true }));
-        mesh.position.set(0, 0, 0);
-        mesh.rotation.set(-Math.PI / 2, 0, 0);
-        mesh.position.set(x, y, z);
-
-        return mesh;
-    }
-
     function buildTag(dataNode) {
 
         var tag = document.createElement("div");
         tag.id = getName(dataNode);
         tag.classList.add("tag");
-        tag.classList.add("hidden");
         tag.innerText = getName(dataNode);
+
+        var data = dataNode.findData();
+
+        var info = document.createElement("div");
+        info.classList.add("info");
+        info.classList.add("collapsed");
+
+        var id = dataNode.getAttribute("id"),
+            comparator = dataNode.getAttribute("comparator"),
+            comparatorDomElement = document.getElementById(id)
+
+        tag.addEventListener("mouseenter", function () {
+
+            var point = dataNode.getAttribute("point"),
+                color = {
+                    r: point.material.color.r, 
+                    g: point.material.color.g,
+                    b: point.material.color.b
+                };
+
+            point.material.color.setRGB(0, 0, 0);
+
+            tag.addEventListener("mouseleave", function () {
+
+                this.removeEventListener(this.type, arguments.callee)
+
+                point.material.color.setRGB(color.r, color.g, color.b);
+            });
+        });
+
+        tag.addEventListener("click", function () {
+
+            info.classList.remove("collapsed");
+            comparatorDomElement.scrollIntoView();
+
+            if (comparator.isCollapsed()) {
+                eventFire(comparatorDomElement, "click");
+            }
+
+            drawCornerLines(tag, comparatorDomElement);
+        });
+
+        tag.addEventListener("mouseleave", function () {
+
+            info.classList.add("collapsed");
+
+            svg.selectAll("*").remove();
+        });
+
+        tag.appendChild(info);
+
+        function drawCornerLines(fromElement, toElement) {
+
+            var fromRect = fromElement.getBoundingClientRect(),
+                toRect = toElement.getBoundingClientRect();
+
+            ///
+            /// TODO - this is bad - calculate
+            ///
+            var offset = 8;
+
+            var p1 = {
+                y: fromRect.top - offset,
+                x: fromRect.left - offset
+            }
+
+            var p2 = {
+                y: toRect.top - offset,
+                x: toRect.left - offset
+            }
+
+            var p3 = {
+                y: fromRect.bottom - offset,
+                x: fromRect.right - offset
+            }
+
+            var p4 = {
+                y: toRect.bottom - offset,
+                x: toRect.left - offset
+            }
+
+            svg.append("path")
+                .attr("d", lineFunc([p1, p2]))
+                .attr("stroke", "black")
+                .style("stroke-dasharray", ("3, 3"))
+                .attr("stroke-width", 0.7)
+                .attr("opacity", 0.5)
+                .attr("fill", "none");
+
+            svg.append("path")
+                .attr("d", lineFunc([p3, p4]))
+                .attr("stroke", "black")
+                .style("stroke-dasharray", ("3, 3"))
+                .attr("stroke-width", 0.7)
+                .attr("opacity", 0.5)
+                .attr("fill", "none");
+        }
 
         return tag;
     }
 
-    function getName(dataNode) {
+    function getName(dataNode, bool) {
 
         return dataNode.getName() == null
-                ? dataNode.findData()[0]["Name"].slice(0, 11)
+                ? bool
+                    ? dataNode.findData()[0]["Name"]
+                    : dataNode.findData()[0]["Name"].slice(0, 11)
                 : dataNode.getName();
     }
 
     function convert(vec) {
         return new THREE.Vector3(vec.x, vec.z, -vec.y);
+    }
+
+    // http://stackoverflow.com/questions/2705583/how-to-simulate-a-click-with-javascript
+    function eventFire(el, etype) {
+        if (el.fireEvent) {
+            el.fireEvent('on' + etype);
+        } else {
+            var evObj = document.createEvent('Events');
+            evObj.initEvent(etype, true, false);
+            el.dispatchEvent(evObj);
+        }
     }
 })()

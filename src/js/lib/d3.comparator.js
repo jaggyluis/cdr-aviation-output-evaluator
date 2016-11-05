@@ -14,7 +14,8 @@ d3.comparator = function(config) {
         var1Color: "#cc0000",
         var2Color: "#006699",
         blendColor: "#ffffff",
-        colors : []
+        colors: [],
+        id : null
 
     }
 
@@ -235,8 +236,23 @@ d3.comparator = function(config) {
                     color = __.var2Color;
                 }
 
+                var startPoint = {
+                    x: __.data[key][0].x,
+                    y: 0
+                };
+
+                var endPoint = {
+                    x: __.data[key][__.data[key].length - 1].x,
+                    y: 0
+                };
+
+                var allPoints = __.data[key].slice(0);
+
+                allPoints.splice(0,0, startPoint);
+                allPoints.push(endPoint);
+               
                 cp.dataGroup.append("path")
-                    .attr("d", lineFunc(__.data[key].map(function (d) {
+                    .attr("d", lineFunc(allPoints.map(function (d) {
 
                         return {
                             x: __.xScale(d.x),
@@ -246,7 +262,8 @@ d3.comparator = function(config) {
                     })))
                     .attr("stroke", "grey")
                     .attr("stroke-width", 1)
-                    .attr("fill", "none")
+                    .attr("fill", color)
+                    .attr("fill-opacity", 0.5)
                     .attr("stroke", color)
             }
 
@@ -284,6 +301,15 @@ d3.comparator = function(config) {
 
         return cp;
 
+    }
+
+    cp.id = function (id) {
+
+        __.id = id;
+
+        cp.svg[0][0].id = __.id;
+
+        return cp;
     }
 
     cp.title = function (title) {

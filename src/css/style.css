@@ -2,6 +2,13 @@
     background-color: #f2f2f2;
     font-family: Arial, Helvetica, sans-serif;
     overflow: hidden;
+
+    -webkit-touch-callout: none;
+    -webkit-user-select: none;
+    -khtml-user-select: none;
+    -moz-user-select: none;
+    -ms-user-select: none;
+    user-select: none;
 }
 
 /*
@@ -28,12 +35,24 @@
     width: 39.5%;
     height: 90%;
     margin-top: 5px;
+    overflow-y: hidden;
+}
+
+#evals-frame {
+    max-height: 97%;
     overflow-y: scroll;
     overflow-x: hidden;
 }
 
-#evals-frame {
-    
+#evals-collapsed {
+    padding-top: 2px;
+}
+
+#helper {
+    width:100%;
+    height:99%;
+    position: absolute;
+    pointer-events: none;
 }
 
 /*
@@ -51,8 +70,10 @@
 }
 
 .title-bar {
-    height: 15px;
+    height: 21px;
+    border-bottom: 5px solid #f2f2f2;
     width: 100%;
+    background-color: white;
 }
 
 .title {
@@ -84,7 +105,10 @@ svg:hover {
 
 .hidden {
     visibility: hidden;
-    //display: none;
+}
+
+.collapsed {
+    display: none;
 }
 
 .float-right {
@@ -102,9 +126,40 @@ svg:hover {
 .tag {
     font-size: 8px;
     position: absolute;
-    border: 1px dotted grey;
+    overflow: hidden;     
+}
+
+.settings {
+    font-size: 8px;
+    padding: 4px;
+    color: white;
+    background-color: black;
+    right: 0;
+    margin: 2px 30px 0px 0px;
+    position: fixed;
+}
+
+.settings:hover {
+    background-color: grey;
+}
+
+.settings-box {
+    background-color: black;
+    position: fixed;
+    height: 100px;
+    width: 100px;
 }
 
 .tag:hover {
-    border: 1px solid grey;
+    z-index: 10;
+    background-color: #f2f2f2;
+    opacity: 0.9;
+}
+
+.info {
+    width: 200px;
+    height: 300px;
+    position: relative;
+    top: 10px;
+    z-index: 10;
 }
