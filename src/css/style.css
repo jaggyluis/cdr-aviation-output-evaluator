@@ -59,19 +59,9 @@
     other
 */
 
-.checkbox-input {
-    height: 10px;
-    margin: 5px;
-}
-
-.checkbox-text {
-    font-size: 10px;
-    padding: 5px 10px 5px 0px;
-}
-
 .title-bar {
     height: 21px;
-    border-bottom: 5px solid #f2f2f2;
+    border-bottom: 1px solid #f2f2f2;
     width: 100%;
     background-color: white;
 }
@@ -80,6 +70,82 @@
     font-size: 12px;
     padding: 5px;
     height: 15px;
+}
+
+.settings {
+    font-size: 8px;
+    padding: 6px;
+    color: white;
+    background-color: black;
+    z-index: 100;
+}
+
+.settings:hover {
+    background-color: grey;
+}
+
+
+.settings-item {
+}
+
+.settings-item:hover {
+    background-color: grey;
+}
+
+.settings-sub-item:hover {
+    background-color: grey;
+}
+
+.settings-box {
+    background-color: black;
+    position: fixed;
+    min-height: 1px;
+    width: 200px;
+}
+
+.checkbox-input {
+    float: left;
+    margin: 4px;
+    appearance: none;
+}
+
+.checkbox-info {
+    font-size: 10px;
+    padding: 5px 10px 5px 0px;
+    margin-left: 20px;
+}
+
+.text-input {
+    float: left;
+    width: 100px;
+    height: 21px;
+    border: 1px solid black;
+}
+
+.text-info {
+    font-size: 10px;
+    padding: 5px 10px 5px 0px;
+    margin-left: 105px;
+}
+
+.tag {
+    font-size: 8px;
+    position: absolute;
+    overflow: hidden;     
+}
+
+.tag:hover {
+    z-index: 10;
+    background-color: #f2f2f2;
+    opacity: 0.9;
+}
+
+.info {
+    width: 200px;
+    height: 300px;
+    position: relative;
+    top: 10px;
+    z-index: 10;
 }
 
 /*
@@ -107,6 +173,10 @@ svg:hover {
     visibility: hidden;
 }
 
+.no-hover:hover {
+    background-color: inherit !important;
+}
+
 .collapsed {
     display: none;
 }
@@ -123,43 +193,3 @@ svg:hover {
     background-color: white;
 }
 
-.tag {
-    font-size: 8px;
-    position: absolute;
-    overflow: hidden;     
-}
-
-.settings {
-    font-size: 8px;
-    padding: 4px;
-    color: white;
-    background-color: black;
-    right: 0;
-    margin: 2px 30px 0px 0px;
-    position: fixed;
-}
-
-.settings:hover {
-    background-color: grey;
-}
-
-.settings-box {
-    background-color: black;
-    position: fixed;
-    height: 100px;
-    width: 100px;
-}
-
-.tag:hover {
-    z-index: 10;
-    background-color: #f2f2f2;
-    opacity: 0.9;
-}
-
-.info {
-    width: 200px;
-    height: 300px;
-    position: relative;
-    top: 10px;
-    z-index: 10;
-}

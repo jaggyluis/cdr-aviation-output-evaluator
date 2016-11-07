@@ -1,4 +1,6 @@
-﻿
+﻿/// <reference path="model.js" />
+/// <reference path="lib/three.js" />
+
 (function () {
 
     console.log("init aviation-output-evaluator");
@@ -40,36 +42,65 @@
         buildScene(
             buildEvaluations(
                 model.getDataNodes(),
-                document.getElementById("evals-frame"), true),
+                document.getElementById("evals-frame"),
+                true),
             document.getElementById("scene-frame"));
 
-        buildEvaluationSettings();
+        buildEvaluationSettings(model);
+        buildSceneSettings(model.getDataNodes());
     }
 
-    function buildEvaluationSettings(dataNodes) {
+    function buildEvaluationSettings(model) {
 
         var settingsButton = document.getElementById("evals-settings"),
             settingsBox = document.getElementById("evals-settings-box");
 
         var settingsButtonRect = settingsButton.getBoundingClientRect();
 
-        settingsBox.style.left = settingsButtonRect.right -
-            settingsBox.clientWidth - 5 + "px";
-
+        settingsBox.style.left = settingsButtonRect.right - settingsBox.clientWidth + "px";
         settingsBox.style.top = settingsButtonRect.bottom + "px";
 
-        //console.log(settings)
-
         settingsButton.addEventListener("mouseenter", function () {
-
             settingsBox.classList.remove("hidden");
         });
-
         settingsButton.addEventListener("mouseleave", function () {
-
             settingsBox.classList.add("hidden");
         });
 
+        var types = Object.keys(model.getDataNodeLocationTypes());
+
+        var settingsFilterTypesCheckBox = document.getElementById("evals-settings-filter-types-checkbox");
+
+        for (var i = 0; i < types.length; i++) {
+
+            var template = document.querySelector("#filter-types-checkbox-template");
+            var clone = document.importNode(template.content, true);
+
+            var settingsSubItem = clone.querySelector("#filter-types-checkbox-item-"),
+                settingsSubItemInput = clone.querySelector("#filter-types-checkbox-input-"),
+                settingsSubItemInfo = clone.querySelector("#filter-types-checkbox-info-");
+
+            settingsSubItem.id += types[i];
+            settingsSubItemInput.id += types[i];
+            settingsSubItemInfo.id += types[i];
+
+            settingsSubItemInfo.innerHTML = types[i];
+
+            settingsSubItemInfo.addEventListener("click", (function () {
+
+                var item = document.getElementById("filter-types-checkbox-input-" + this);
+
+                item.checked = !item.checked
+                eventFire(item, "change");
+
+            }).bind(types[i]));
+
+            settingsSubItemInput.addEventListener("change", function () {
+
+            });
+            
+            settingsFilterTypesCheckBox.appendChild(clone);
+        }
     }
 
     function buildEvaluations(dataNodes, domElement, collapsed) {
@@ -135,10 +166,38 @@
         return dataNodes;
     }
 
-    function buildSceneSettings() {
+    function buildSceneSettings(dataNodes) {
 
+        var settingsButton = document.getElementById("scene-settings"),
+            settingsBox = document.getElementById("scene-settings-box");
 
+        var settingsButtonRect = settingsButton.getBoundingClientRect();
 
+        var settingsTextToggleItem = document.getElementById("text-toggle-info"),
+            settingsTextToggleCheckBox = document.getElementById("text-toggle-input");
+
+        settingsBox.style.left = settingsButtonRect.right - settingsBox.clientWidth + "px";
+        settingsBox.style.top = settingsButtonRect.bottom + "px";
+        settingsButton.addEventListener("mouseenter", function () {
+            settingsBox.classList.remove("hidden");
+        });
+        settingsButton.addEventListener("mouseleave", function () {
+            settingsBox.classList.add("hidden");
+        });
+
+        settingsTextToggleItem.addEventListener("click", function () {
+            settingsTextToggleCheckBox.checked = !settingsTextToggleCheckBox.checked
+            eventFire(settingsTextToggleCheckBox, "change");
+        });
+
+        settingsTextToggleCheckBox.addEventListener("change", function () {
+            for (var i = 0; i < dataNodes.length; i++) {
+
+                var tag = dataNodes[i].getAttribute("tag")
+
+                tag.classList.toggle("hidden");
+            }
+        });
     }
 
     function buildScene(dataNodes, domElement) {
@@ -383,6 +442,8 @@
                 x: toRect.left - offset
             }
 
+            svg.selectAll("*").remove();
+
             svg.append("path")
                 .attr("d", lineFunc([p1, p2]))
                 .attr("stroke", "black")
@@ -404,12 +465,7 @@
     }
 
     function getName(dataNode, bool) {
-
-        return dataNode.getName() == null
-                ? bool
-                    ? dataNode.findData()[0]["Name"]
-                    : dataNode.findData()[0]["Name"].slice(0, 11)
-                : dataNode.getName();
+        return !bool ? dataNode.getName().slice(0, 11) : dataNode.getName();
     }
 
     function convert(vec) {

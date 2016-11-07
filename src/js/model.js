@@ -35,7 +35,8 @@ function buildDataNode(nodeString, data, index) {
     nodeString = nodeString.split('}');
 
     var point2d = (nodeString[0] + "}").replace('Point2D ', ''),
-        name = nodeString[1];
+        name = data[0][0]["Name"],
+        locationType = data[0][0]["Location type"];
 
     point2d = point2d.replace(/=/g, ':');
     point2d = point2d.replace(/ /g, '"');
@@ -46,17 +47,18 @@ function buildDataNode(nodeString, data, index) {
         point2d[key] = parseFloat(point2d[key]);
     }
 
-    dataNode = new DataNode(point2d, (name != "" ? name : null));
+    dataNode = new DataNode(point2d, name, locationType);
     dataNode.setData(data);
 
     return dataNode;
 }
 
 // model ---
-function DataNode(point2d, name) {
+function DataNode(point2d, name, locationType) {
 
     this._pos = point2d;
     this._name = name;
+    this._locationType = locationType;
     this._data = {};
     this._attributes = {};
 }
@@ -65,6 +67,11 @@ DataNode.prototype = {
     getName: function () {
 
         return this._name;
+    },
+
+    getLocationType: function () {
+
+        return this._locationType;
     },
 
     setData: function (data) {
@@ -113,16 +120,44 @@ DataNode.prototype = {
 function Model() {
 
     this._dataNodes = [];
+    this._dataNodeLocationTypes = {};
+    this._dataNodeNames = {};
 }
 Model.prototype = {
 
     setDataNodes: function (dataNodes) {
 
         this._dataNodes = dataNodes;
+
+        for (var i = 0; i < this._dataNodes.length; i++) {
+
+            var dataNode = this._dataNodes[i];
+
+            if (!(dataNode.getLocationType() in this._dataNodeLocationTypes)) {
+                this._dataNodeLocationTypes[dataNode.getLocationType()] = [];
+            }
+
+            if (!(dataNode.getName() in this._dataNodeNames)) {
+                this._dataNodeNames[dataNode.getName()] = [];
+            }
+
+            this._dataNodeLocationTypes[dataNode.getLocationType()].push(dataNode);
+            this._dataNodeNames[dataNode.getName()].push(dataNode);
+        }
     },
 
     getDataNodes: function () {
 
         return this._dataNodes;
+    },
+
+    getDataNodeLocationTypes: function () {
+
+        return this._dataNodeLocationTypes;
+    },
+
+    getDataNodeNames: function () {
+
+        return this._dataNodeNames;
     }
 }
