@@ -61,6 +61,8 @@ function DataNode(point2d, name, locationType) {
     this._locationType = locationType;
     this._data = {};
     this._attributes = {};
+
+    this.isActive = true;
 }
 DataNode.prototype = {
 

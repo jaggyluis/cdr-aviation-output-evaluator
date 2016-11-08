@@ -23,23 +23,32 @@
 #scene-box {
     margin-top: 5px;
     width: 60%;
-    height: 90%;
+    height: 97%;
 }
 
 #scene-frame {
     width: 100%;
-    height: 90%;
+    height: 97%;
+}
+
+#scene-tags {
+    height: 92%;
+    position: absolute;
+    width: 59%;
+    overflow: hidden;
+    pointer-events: none;
 }
 
 #evals-box {
     width: 39.5%;
     height: 90%;
     margin-top: 5px;
-    overflow-y: hidden;
+    //overflow-y: hidden;
 }
 
 #evals-frame {
     max-height: 97%;
+    width: 100%;
     overflow-y: scroll;
     overflow-x: hidden;
 }
@@ -68,8 +77,30 @@
 
 .title {
     font-size: 12px;
-    padding: 5px;
+    padding: 5px 5px 0px 5px;
     height: 15px;
+}
+
+.slider-bar {
+    height: 7%;
+    margin-top: 6px;
+}
+
+.slider-input {
+    -webkit-appearance: none;
+    width: 100%;
+    height:1px;
+    background-color: black;
+    margin-top: 10px;
+}
+
+.slider-input::-webkit-slider-thumb {
+    -webkit-appearance: none;
+    border: 1px solid black;
+    background-color: black;
+	width: 20px;
+	height: 20px;
+	cursor: pointer;
 }
 
 .settings {
@@ -83,7 +114,6 @@
 .settings:hover {
     background-color: grey;
 }
-
 
 .settings-item {
 }
@@ -131,7 +161,8 @@
 .tag {
     font-size: 8px;
     position: absolute;
-    overflow: hidden;     
+    overflow: hidden;
+    pointer-events: all;  
 }
 
 .tag:hover {
@@ -148,12 +179,18 @@
     z-index: 10;
 }
 
+.comparator-box {
+    background-color: white;
+}
+
+
+
 /*
     basic types
 */
 
 svg {
-    border-bottom: 3px solid #f2f2f2;
+    //border-bottom: 2px solid #f2f2f2;
 }
 
 svg:hover {
@@ -190,6 +227,5 @@ svg:hover {
 }
 
 .color-default {
-    background-color: white;
 }
 

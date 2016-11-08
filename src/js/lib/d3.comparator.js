@@ -34,7 +34,11 @@ d3.comparator = function(config) {
 	    __.width = selection[0][0][0][0].clientWidth;
 	    __.height = __.height ? __.height : 100;
 
-	    cp.svg = selection[0][0]
+	    cp.div = selection[0][0]
+            .append("div")
+	        .attr("class", "comparator-box");
+
+	    cp.svg = cp.div
             .append("svg")
                 .attr("width", __.width)
                 .attr("height", __.height)
