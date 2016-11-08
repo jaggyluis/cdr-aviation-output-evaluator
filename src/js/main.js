@@ -191,9 +191,10 @@
             return dataNode.isActive;
         });;
 
-        camera = new THREE.PerspectiveCamera(45, width / height, 1, 2000);
+        //camera = new THREE.PerspectiveCamera(45, width / height, 1, 2000);
+        camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, -5000, 10000);
         scene = new THREE.Scene();
-
+        
         renderer = new THREE.WebGLRenderer();
         renderer.setPixelRatio(window.devicePixelRatio);
         renderer.setSize(width, height);
@@ -209,8 +210,8 @@
         projScreenMatrix = new THREE.Matrix4();
 
         var controls = new THREE.OrbitControls(camera, renderer.domElement);
-        controls.target.set(0, 12, 0);
-        camera.position.set(2, 18, 28);
+        //controls.target.set(0, 12, 0);
+        //camera.position.set(2, 18, 28);
         controls.update();
         controls.addEventListener('change', onCameraChange);
         window.addEventListener('resize', onWindowResize, false);
@@ -356,8 +357,16 @@
 
         var types = {
 
-            "Circulation": { color: 'rgb(0, 0, 0)', size: 5 },
-            "Other": { color: 'rgb(0, 0, 0)', size: 15 },
+            "Circulation": {
+                color: 'rgb(0, 0, 0)',
+                size: 5,
+                sizeAttenuation: false
+            },
+            "Other": {
+                color: 'rgb(0, 0, 0)',
+                size: 15,
+                sizeAttenuation: false
+            },
         }
 
         var data = dataNode.findData()[0]["Name"],
@@ -494,7 +503,8 @@
     }
 
     function convert(vec) {
-        return new THREE.Vector3(vec.x, vec.z, -vec.y);
+        //return new THREE.Vector3(vec.x, vec.z, -vec.y);
+        return vec;
     }
 
     // http://stackoverflow.com/questions/2705583/how-to-simulate-a-click-with-javascript
