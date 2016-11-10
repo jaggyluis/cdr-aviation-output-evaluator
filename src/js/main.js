@@ -1,9 +1,10 @@
-﻿/// <reference path="model.js" />
+﻿/// <reference path="lib/d3.v3.min.js" />
+/// <reference path="model.js" />
 /// <reference path="lib/three.js" />
 
 (function () {
 
-    console.log("init aviation-output-evaluator");
+    console.log("init aviation-output-comparator");
 
     var camera,
         scene,
@@ -28,9 +29,9 @@
         .y(function (d) { return d.y; })
         .interpolate('linear');
 
-    d3.csv("doc/occupationdata.csv", function (d1) {
+    d3.csv("doc/occupationdata1.csv", function (d1) {
 
-        d3.csv("doc/occupationdata_rand.csv", function (d2) {
+        d3.csv("doc/occupationdata2.csv", function (d2) {
 
             model = new Model();
             model.setDataNodes(buildDataNodes(d1, d2));
@@ -45,6 +46,7 @@
         buildEvaluationSettings(model);
         buildScene(model, document.getElementById("scene-frame"));
         buildSceneSettings(model);
+        buildSlider(model);
     }
 
     function buildEvaluations(model, domElement, collapsed) {
@@ -353,6 +355,14 @@
         });
     }
 
+    function buildSlider() {
+        
+        ///
+        /// implement slider
+        ///
+
+    }
+
     function buildPoint(dataNode) {
 
         var types = {
@@ -379,7 +389,7 @@
             attr = types["Other"];
         }
 
-        attr.color = dataNode.getAttribute("colors")[0];
+        attr.color = dataNode.getAttribute("colors")[12];
 
         var pointGeom = new THREE.Geometry();
         pointGeom.vertices.push(convert(new THREE.Vector3(dataNode._pos.x, dataNode._pos.y, 0)));
@@ -499,7 +509,8 @@
     }
 
     function getName(dataNode, bool) {
-        return !bool ? dataNode.getName().slice(0, 11) : dataNode.getName();
+        //return !bool ? dataNode.getName().slice(0, 11) : dataNode.getName();
+        return dataNode.getName();
     }
 
     function convert(vec) {

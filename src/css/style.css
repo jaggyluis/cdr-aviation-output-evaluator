@@ -77,8 +77,20 @@
 
 .title {
     font-size: 12px;
-    padding: 5px 5px 0px 5px;
     height: 15px;
+}
+
+.title-section {
+    float:left;
+    padding: 5px;
+}
+
+.title-inactive {
+    background-color: rgba(0, 0, 0, 0.08);
+}
+
+.title-inactive:hover {
+    background-color: white;
 }
 
 .slider-bar {
@@ -148,7 +160,7 @@
 .text-input {
     float: left;
     width: 100px;
-    height: 21px;
+    height: 20px;
     border: 1px solid black;
 }
 

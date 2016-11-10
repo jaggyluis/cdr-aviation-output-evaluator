@@ -135,7 +135,7 @@ d3.comparator = function(config) {
         var yVals1 = __.data[0].map(function (d) { return d.y; }),
             yVals2 = __.data[1].map(function (d) { return d.y; });
 
-        var yMax = Math.abs(d3.max(yVals1) - d3.max(yVals2));
+        var yMax = Math.abs(d3.max(yVals1) + d3.max(yVals2)) * 0.75;
 
         var color_scale1 = d3.scale.linear().domain([0, yMax]).range([__.blendColor, __.var1Color]);
         var color_scale2 = d3.scale.linear().domain([0, yMax]).range([__.blendColor, __.var2Color]);

@@ -2,7 +2,7 @@
 <html>
 
 <head>
-    <title>Aviation Output Evaluator</title>
+    <title>Aviation Output Comparator</title>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="css/style.css">
@@ -16,7 +16,9 @@
         </div>
         <div id="scene-box" class="float-left color-default">
             <div id="scene-bar" class="title-bar">
-                <div id="scene-title" class="title float-left">SCENE</div>
+                <div id="scene-title-bar" class="title float-left">
+                    <div id="scene-title-scene" class="title-section">SCENE</div>
+                </div>
                 <div id="scene-settings" class="settings float-right">SETTINGS
                     <div id="scene-settings-box" class="settings-box hidden">
                         <div id="scene-settings-text-toggle" class="settings-item">
@@ -31,7 +33,11 @@
         </div>
         <div id="evals-box" class="float-right color-default">
             <div id="evals-bar" class="title-bar">
-                <div id="evals-title" class="title float-left">EVALUATIONS</div>
+                <div id="evals-title-bar" class="title float-left">
+                    <div id="evals-title-evaluations" class="title-section">EVALUATIONS</div>
+                    <div id="evals-title-comparisons" class="title-section title-inactive">COMPARISONS</div>
+                    <div id="evals-title-summary" class="title-section title-inactive">SUMMARY</div>
+                </div>
                 <div id="evals-settings" class="settings float-right">SETTINGS
                     <div id="evals-settings-box" class="settings-box hidden">
                         <div id="evals-settings-filter-types-text" class="settings-item">
@@ -45,7 +51,7 @@
             </div>
             <div id="evals-frame"></div>
             <div id="evals-slider" class="slider-bar">
-                <input id="evals-slider-input" class="slider-input" type="range"/>
+                <input id="evals-slider-input" class="slider-input" type="range" min="0" value="12" max="23" step="1" />
             </div>
         </div>
     </div>
