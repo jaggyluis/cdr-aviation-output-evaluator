@@ -15,7 +15,8 @@ d3.comparator = function(config) {
         var2Color: "#006699",
         blendColor: "#ffffff",
         colors: [],
-        id : null
+        id: null,
+        highlighted: -1, // off
 
     }
 
@@ -178,8 +179,11 @@ d3.comparator = function(config) {
                 .attr("width", delta)
                 .attr("height", height)
                 .attr("opacity", opacity)
-                .attr("fill", color);
+                .attr("fill", color)
+                .attr("stroke-opacity", "0.5")
         }
+
+        cp.buildTableOutlines();
 
         return cp;
     }
@@ -283,8 +287,24 @@ d3.comparator = function(config) {
 
         cp.collapsed(bool).build();
 
-        return cp;
-        
+        return cp;        
+    }
+
+    cp.buildTableOutlines = function () {
+
+        for (var i = 0; i < cp.tableGroup.length; i++) {
+
+            var group = cp.tableGroup[i][0],
+                children = group.children;
+
+            for (var j = 0; j < children.length; j++) {
+
+                d3.select(children[j]).attr("stroke", function () {
+
+                    return j === __.highlighted ? "black" : "None";
+                });
+            }
+        }
     }
 
     cp.width = function(val) {
@@ -294,7 +314,6 @@ d3.comparator = function(config) {
         cp.svg.attr("width", __.width)
 
         return cp;
-
     }
 
     cp.height = function (val) {
@@ -304,7 +323,6 @@ d3.comparator = function(config) {
         cp.svg.attr("height", __.height)
 
         return cp;
-
     }
 
     cp.id = function (id) {
@@ -363,6 +381,15 @@ d3.comparator = function(config) {
     cp.getColors = function () {
 
         return __.colors;
+    }
+
+    cp.setHighlightedValue = function (val) {
+
+        __.highlighted = val;
+
+        cp.buildTableOutlines();
+
+        return cp;
     }
 
 	return cp;

@@ -1,4 +1,6 @@
-﻿/// <reference path="lib/d3.v3.min.js" />
+﻿/// <reference path="lib/aviation.min.js" />
+/// <reference path="lib/three-dxf.js" />
+/// <reference path="lib/d3.v3.min.js" />
 /// <reference path="model.js" />
 /// <reference path="lib/three.js" />
 
@@ -17,7 +19,9 @@
         projScreenMatrix;
         
 
-    var helper = document.getElementById("helper");
+    var helper = document.getElementById("helper"),
+        slider = document.getElementById("evals-slider-input"),
+        time = document.getElementById("evals-time");
 
     var svg = d3.select(helper)
         .append("svg")
@@ -33,10 +37,15 @@
 
         d3.csv("doc/occupationdata2.csv", function (d2) {
 
-            model = new Model();
-            model.setDataNodes(buildDataNodes(d1, d2));
+            readFile("doc/spatialstructure.dxf", function (dxf) {
 
-            init(model);
+                model = new Model();
+                model.setDataNodes(buildDataNodes(d1, d2));
+                model.setDXFData(dxf);
+
+                init(model);
+                
+            });
         })
     });
 
@@ -49,6 +58,41 @@
         buildSlider(model);
     }
 
+    function readFile(file, cb) {
+        
+        function readTextFile(file, cb) {
+            var rawFile = new XMLHttpRequest();
+            rawFile.responseType = "blob"
+            rawFile.open("GET", file, true);
+            rawFile.onreadystatechange = function () {
+
+                if (rawFile.readyState === 4) {
+                    if (rawFile.status === 200 || rawFile.status == 0) {
+                        
+                        var response = rawFile.response;
+
+                        cb(response);
+                    }
+                }
+            }
+            rawFile.send(null);
+        }
+
+        var reader = new FileReader();
+
+        reader.onprogress = updateProgress;
+        reader.onabort = abortUpload;
+        reader.onerror = errorHandler;
+
+        reader.onloadend = function (evt) {
+            cb(onSuccess(evt));
+        };
+
+        readTextFile(file, function (data) {
+            reader.readAsText(data);
+        });    
+    }
+
     function buildEvaluations(model, domElement, collapsed) {
 
         domElement.innerHTML = "";
@@ -56,7 +100,7 @@
         var node = d3.select(domElement),
             dataNodes = model.getDataNodes().filter(function (dataNode) {
                 return dataNode.isActive;
-            });;
+            });
 
         dataNodes.forEach(function (dataNode) {
 
@@ -91,6 +135,7 @@
             comparator
                 .title(getName(dataNode, !comparator.isCollapsed()))
                 .id(id)
+                .setHighlightedValue(+slider.value)
                 .onClick(function () {
 
                     var height = comparator.isCollapsed()
@@ -112,7 +157,7 @@
             return testString.match(/\d*:\d*/g) != null;
         }
 
-        return dataNodes;
+        return model;
     }
 
     function buildEvaluationSettings(model) {
@@ -181,6 +226,8 @@
 
             settingsFilterTypesCheckBox.appendChild(clone);
         }
+
+        return model;
     }
 
     function buildScene(model, domElement) {
@@ -194,14 +241,30 @@
         });;
 
         //camera = new THREE.PerspectiveCamera(45, width / height, 1, 2000);
-        camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, -5000, 10000);
-        scene = new THREE.Scene();
+        //camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, -5000, 10000);
+        //scene = new THREE.Scene();
         
-        renderer = new THREE.WebGLRenderer();
-        renderer.setPixelRatio(window.devicePixelRatio);
-        renderer.setSize(width, height);
-        renderer.setClearColor(0xffffff);
-        node.appendChild(renderer.domElement);
+        var font;
+        var loader = new THREE.FontLoader();
+
+        loader.load('fonts/helvetiker_regular.typeface.json', function (response) {
+            font = response;
+        });
+
+        var viewer = new ThreeDxf.Viewer(model.getDXFData(), node, width, height, font);
+
+        scene = viewer.scene;
+        renderer = viewer.renderer;
+        camera = viewer.camera;
+        controls = viewer.controls;
+
+        controls.enableRotate = false;
+
+        //renderer.setPixelRatio(window.devicePixelRatio);
+        //renderer.setSize(width, height);
+        //renderer.setClearColor(0xffffff);
+
+        controls.update();
 
         raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
@@ -211,11 +274,12 @@
         frustum = new THREE.Frustum();
         projScreenMatrix = new THREE.Matrix4();
 
-        var controls = new THREE.OrbitControls(camera, renderer.domElement);
-        //controls.target.set(0, 12, 0);
-        //camera.position.set(2, 18, 28);
-        controls.update();
-        controls.addEventListener('change', onCameraChange);
+
+        //camera.position.set(161, -115, 9);
+        camera.zoom = 0.004;
+        camera.updateProjectionMatrix();
+
+        controls.addEventListener('change', onCameraChange);    
         window.addEventListener('resize', onWindowResize, false);
 
         dataNodes.forEach(function (dataNode, i) {
@@ -233,6 +297,7 @@
         document.addEventListener('mousemove', onDocumentMouseMove, false);
 
         animate();
+        onWindowResize();
         onCameraChange();
 
         function onWindowResize() {
@@ -252,11 +317,8 @@
 
                 var proj = toScreenPosition(point, camera);
 
-                ///
-                /// TODO - this is bad - should be a function of parent
-                ///
-                var posX = 0.82 * proj.x + 'px',
-                    posY = 0.82 * proj.y + 'px';
+                var posX =  proj.x + 'px',
+                    posY =  proj.y + 'px';
 
                 tag.style.left = posX;
                 tag.style.top = posY;
@@ -301,7 +363,7 @@
         }
         
         function onDocumentMouseMove(event) {
-            event.preventDefault();
+            //event.preventDefault();
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         }
@@ -315,7 +377,7 @@
             renderer.render(scene, camera);
         }
 
-        return dataNodes;
+        return model;
     }
 
     function buildSceneSettings(model) {
@@ -353,14 +415,32 @@
                 tag.classList.toggle("hidden");
             }
         });
+
+        return model;
     }
 
-    function buildSlider() {
+    function buildSlider(model) {
         
-        ///
-        /// implement slider
-        ///
+        var dataNodes = model.getDataNodes();
 
+        slider.addEventListener("change", function () {
+
+            for (var i = 0; i < dataNodes.length; i++) {
+
+                var value = +this.value,
+                    comparator = dataNodes[i].getAttribute("comparator"),
+                    point = dataNodes[i].getAttribute("point"),
+                    color = dataNodes[i].getAttribute("colors")[value];
+
+                comparator.setHighlightedValue(value);
+                point.material.color.set(color);
+            }
+        })
+
+        slider.addEventListener("mousemove", function () {
+
+            time.innerHTML = aviation.core.time.decimalDayToTime(+this.value / 24);
+        });
     }
 
     function buildPoint(dataNode) {
@@ -389,7 +469,7 @@
             attr = types["Other"];
         }
 
-        attr.color = dataNode.getAttribute("colors")[12];
+        attr.color = dataNode.getAttribute("colors")[+slider.value];
 
         var pointGeom = new THREE.Geometry();
         pointGeom.vertices.push(convert(new THREE.Vector3(dataNode._pos.x, dataNode._pos.y, 0)));
@@ -515,7 +595,8 @@
 
     function convert(vec) {
         //return new THREE.Vector3(vec.x, vec.z, -vec.y);
-        return vec;
+        return new THREE.Vector3(vec.y, -vec.x, vec.z);
+        //return vec;
     }
 
     // http://stackoverflow.com/questions/2705583/how-to-simulate-a-click-with-javascript
@@ -528,4 +609,45 @@
             el.dispatchEvent(evObj);
         }
     }
+
+    function abortUpload() {
+        console.log('Aborted read!')
+    }
+
+    function errorHandler(evt) {
+        switch (evt.target.error.code) {
+            case evt.target.error.NOT_FOUND_ERR:
+                alert('File Not Found!');
+                break;
+            case evt.target.error.NOT_READABLE_ERR:
+                alert('File is not readable');
+                break;
+            case evt.target.error.ABORT_ERR:
+                break; // noop
+            default:
+                alert('An error occurred reading this file.');
+        }
+    }
+
+    function updateProgress(evt) {
+        console.log('progress');
+        console.log(Math.round((evt.loaded / evt.total) * 100));
+    }
+
+    function onSuccess(evt) {
+        var fileReader = evt.target;
+        if (fileReader.error) return console.log("error onloadend!?");
+
+        var parser = new window.DxfParser();
+        var dxf = parser.parseSync(fileReader.result);
+
+        return dxf;
+    }
+
+    function handleDragOver(evt) {
+        evt.stopPropagation();
+        evt.preventDefault();
+        evt.dataTransfer.dropEffect = 'copy'; // Explicitly show this is a copy.
+    }
+
 })()

@@ -175,14 +175,15 @@ var ThreeDxf;
     ThreeDxf.Viewer = function(data, parent, width, height, font) {
         var $parent = $(parent);
 
-        var scene = new THREE.Scene();
+        var scene = this.scene = new THREE.Scene();
+
         width = width || $parent.innerWidth();
         height = height || $parent.innerHeight();
         var aspectRatio = width / height;
         
         var viewPort = Helpers.getCameraParametersFromDxf(data, aspectRatio);
         
-        var camera = new THREE.OrthographicCamera(viewPort.left, viewPort.right, viewPort.top, viewPort.bottom, 1, 19);
+        var camera = this.camera = new THREE.OrthographicCamera(viewPort.left, viewPort.right, viewPort.top, viewPort.bottom, -5000, 10000);
         camera.position.z = 10;
         camera.position.x = viewPort.center.x;
         camera.position.y = viewPort.center.y;
@@ -194,7 +195,7 @@ var ThreeDxf;
         $parent.append(renderer.domElement);
         $parent.show();
 
-        var controls = new THREE.OrbitControls(camera, parent);
+        var controls = this.controls = new THREE.OrbitControls(camera, parent);
         controls.target.x = camera.position.x;
         controls.target.y = camera.position.y;
         controls.target.z = 0;

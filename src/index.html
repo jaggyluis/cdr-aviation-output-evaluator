@@ -21,12 +21,6 @@
                 </div>
                 <div id="scene-settings" class="settings float-right">SETTINGS
                     <div id="scene-settings-box" class="settings-box hidden">
-                        <!--
-                        <div id="scene-settings-dxf-loader" class="settings-item">
-                            <input type="file" accept=".dxf" id="dxf-input" name="file">
-                            <div id="dxf-info">LOAD DXF (Ctrl-o)</div>
-                        </div>
-                            -->
                         <div id="scene-settings-text-toggle" class="settings-item">
                             <input id="text-toggle-input" class="checkbox-input" type="checkbox" checked/>
                             <div id="text-toggle-info" class="checkbox-info">SHOW TAGS (Ctrl-t)</div>
@@ -57,11 +51,11 @@
             </div>
             <div id="evals-frame"></div>
             <div id="evals-slider" class="slider-bar">
-                <input id="evals-slider-input" class="slider-input" type="range" min="0" value="12" max="23" step="1" />
+                <input id="evals-slider-input" class="slider-input" type="range" min="0" value="12" max="23" step="1" list="evals-slider-settings"/>
+                <div id="evals-time">12:00:00</div>
             </div>
         </div>
     </div>
-
 
     <template id="filter-types-checkbox-template">
 
@@ -72,6 +66,28 @@
 
     </template>
 
+    <script>
+
+        function ticks(element) {
+
+            if ('list' in element && 'min' in element && 'max' in element && 'step' in element) {
+                var datalist = document.createElement('datalist'),
+                minimum = parseInt(element.getAttribute('min')),
+                step = parseInt(element.getAttribute('step')),
+                maximum = parseInt(element.getAttribute('max'));
+                datalist.id = element.getAttribute('list');
+                for (var i = minimum; i < maximum + step; i = i + step) {
+                    datalist.innerHTML += "<option value=" + i + "></option>";
+                }
+                element.parentNode.insertBefore(datalist, element.nextSibling);
+            }
+        }
+        var lists = document.querySelectorAll("input[type=range][list]"),
+        arr = Array.prototype.slice.call(lists);
+        arr.forEach(ticks);
+
+    </script>
+
     <!-- library imports -->
     <script src="js/lib/d3.v3.min.js"></script>
     <script src="js/lib/d3.comparator.js"></script>
@@ -80,17 +96,15 @@
     <script src="js/lib/three.OrbitControls.js"></script>
     <script src="js/lib/three.TrackballControls.js"></script>
 
-    <!--
     <script src="js/lib/jquery.min.js"></script>
     <script src="js/lib/dxf-parser.js"></script>
     <script src="js/lib/three-dxf.js"></script>
-        -->
 
     <script src="js/lib/aviation.min.js"></script>
 
     <!-- app -->
     <script src="js/model.js"></script>
-    <script src="js/main.js"></script>
-    <script src="js/dxf.js"></script>
+    <script src="js/main.js" async></script>
+        
 </body>
 </html>

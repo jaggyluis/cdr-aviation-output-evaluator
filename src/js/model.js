@@ -124,6 +124,7 @@ function Model() {
     this._dataNodes = [];
     this._dataNodeLocationTypes = {};
     this._dataNodeNames = {};
+    this._dxf = null;
 }
 Model.prototype = {
 
@@ -161,5 +162,17 @@ Model.prototype = {
     getDataNodeNames: function () {
 
         return this._dataNodeNames;
+    },
+
+    setDXFData: function (dxf) {
+
+        this._dxf = dxf;
+    },
+
+    getDXFData: function () {
+
+        return this._dxf;
     }
+
+
 }
