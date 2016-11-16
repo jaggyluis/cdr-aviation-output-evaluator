@@ -46,12 +46,6 @@
     //overflow-y: hidden;
 }
 
-#evals-frame {
-    max-height: 97%;
-    width: 100%;
-    overflow-y: scroll;
-    overflow-x: hidden;
-}
 
 #evals-collapsed {
     padding-top: 2px;
@@ -71,6 +65,19 @@
 /*
     other
 */
+
+.frame {
+    max-height: 97%;
+    width: 100%;
+    overflow-y: scroll;
+    overflow-x: hidden;
+}
+
+.comparisons-box {
+    height: 200px;
+    background-color: white;
+    border: 1px solid #f2f2f2;
+}
 
 .title-bar {
     height: 21px;
@@ -135,6 +142,7 @@
 }
 
 .settings-item {
+    border-bottom: 1px solid #f2f2f2;
 }
 
 .settings-item:hover {

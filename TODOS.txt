@@ -1,0 +1,16 @@
+
+- link checkboxes by type so that they turn off/on when the type is toggled
+- link points to checkboxes so that the points turn off when the checkbox is toggled
+- implement the filter searchbar
+- implement CTRL+i for quick toggles
+- implement rectangle quick selection from the viewer
+- implement back selection from comparator to point
+
+- implement comparisons view
+- implement summary view
+
+- implement file uploads
+
+- find a way of globalizing the process so that the comparisons section will still work
+
+- remove strict scheme numbering for potential multiple scheme comparisons

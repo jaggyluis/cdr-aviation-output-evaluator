@@ -44,12 +44,14 @@
                             <input id="filter-types-text-input" class="text-input" />
                             <div id="filter-types-text-info" class="text-info">FILTER NODES</div>
                         </div>
-                        <div id="evals-settings-filter-types-checkbox" class="settings-item no-hover">
-                        </div>
+                        <div id="evals-settings-filter-types-checkbox" class="settings-item no-hover"></div>
+                        <div id="evals-settings-filter-names-checkbox" class="settings-item no-hover"></div>
                     </div>
                 </div>
             </div>
-            <div id="evals-frame"></div>
+            <div id="evaluations-frame" class="frame"></div>
+            <div id="comparisons-frame" class="frame collapsed"></div>
+            <div id="summary-frame" class="frame collapsed"></div>
             <div id="evals-slider" class="slider-bar">
                 <input id="evals-slider-input" class="slider-input" type="range" min="0" value="12" max="23" step="1" list="evals-slider-settings"/>
                 <div id="evals-time">12:00:00</div>
@@ -92,9 +94,8 @@
     <script src="js/lib/d3.v3.min.js"></script>
     <script src="js/lib/d3.comparator.js"></script>
 
-    <script src="js/lib/three.js"></script>
+    <script src="js/lib/three.min.js"></script>
     <script src="js/lib/three.OrbitControls.js"></script>
-    <script src="js/lib/three.TrackballControls.js"></script>
 
     <script src="js/lib/jquery.min.js"></script>
     <script src="js/lib/dxf-parser.js"></script>

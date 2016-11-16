@@ -1,4 +1,5 @@
-﻿
+﻿/// <reference path="lib/aviation.min.js" />
+
 // helper functions ---
 function buildDataNodes() {
 
@@ -43,7 +44,7 @@ function buildDataNode(nodeString, data, index) {
     point2d = point2d.replace(/,/g, '",');
     point2d = JSON.parse(point2d);
 
-    for (key in point2d) {
+    for (var key in point2d) {
         point2d[key] = parseFloat(point2d[key]);
     }
 

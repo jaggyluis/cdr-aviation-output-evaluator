@@ -10,9 +10,7 @@
 
     var camera,
         scene,
-        scenePoints,
         renderer,
-        raycaster,
         intersects,
         mouse,
         frustum,
@@ -21,7 +19,10 @@
 
     var helper = document.getElementById("helper"),
         slider = document.getElementById("evals-slider-input"),
-        time = document.getElementById("evals-time");
+        time = document.getElementById("evals-time"),
+        tags = document.getElementById("scene-tags");
+
+    var comparisonComparators = [];
 
     var svg = d3.select(helper)
         .append("svg")
@@ -51,53 +52,103 @@
 
     function init(model) {
     
-        buildEvaluations(model, document.getElementById("evals-frame"), true);
-        buildEvaluationSettings(model);
+        buildEvalsFrames(model);
+        buildEvalsSettings(model);
         buildScene(model, document.getElementById("scene-frame"));
         buildSceneSettings(model);
         buildSlider(model);
     }
 
-    function readFile(file, cb) {
-        
-        function readTextFile(file, cb) {
-            var rawFile = new XMLHttpRequest();
-            rawFile.responseType = "blob"
-            rawFile.open("GET", file, true);
-            rawFile.onreadystatechange = function () {
+    function buildEvalsFrames(model) {
 
-                if (rawFile.readyState === 4) {
-                    if (rawFile.status === 200 || rawFile.status == 0) {
-                        
-                        var response = rawFile.response;
+        var evaluationsFrame = document.getElementById("evaluations-frame"),
+            evaluationsToggle = document.getElementById("evals-title-evaluations");
 
-                        cb(response);
-                    }
-                }
-            }
-            rawFile.send(null);
-        }
+        var comparisonsFrame = document.getElementById("comparisons-frame"),
+            comparisonsToggle = document.getElementById("evals-title-comparisons");
 
-        var reader = new FileReader();
+        var summaryFrame = document.getElementById("summary-frame"),
+            summaryToggle = document.getElementById("evals-title-summary");
 
-        reader.onprogress = updateProgress;
-        reader.onabort = abortUpload;
-        reader.onerror = errorHandler;
+        buildEvaluations(model, evaluationsFrame);
+        buildComparisons(model, comparisonsFrame);
+        buildSummary(model, summaryFrame);
 
-        reader.onloadend = function (evt) {
-            cb(onSuccess(evt));
-        };
+        evaluationsToggle.addEventListener("click", function () {
 
-        readTextFile(file, function (data) {
-            reader.readAsText(data);
-        });    
+            evaluationsFrame.classList.remove("collapsed");
+            comparisonsFrame.classList.add("collapsed");
+            summaryFrame.classList.add("collapsed");
+
+            evaluationsToggle.classList.remove("title-inactive");
+            comparisonsToggle.classList.add("title-inactive");
+            summaryToggle.classList.add("title-inactive");
+        })
+
+        comparisonsToggle.addEventListener("click", function () {
+
+            evaluationsFrame.classList.add("collapsed");
+            comparisonsFrame.classList.remove("collapsed");
+            summaryFrame.classList.add("collapsed");
+
+            evaluationsToggle.classList.add("title-inactive");
+            comparisonsToggle.classList.remove("title-inactive");
+            summaryToggle.classList.add("title-inactive");
+        })
+
+        summaryToggle.addEventListener("click", function () {
+
+            evaluationsFrame.classList.add("collapsed");
+            comparisonsFrame.classList.add("collapsed");
+            summaryFrame.classList.remove("collapsed");
+
+            evaluationsToggle.classList.add("title-inactive");
+            comparisonsToggle.classList.add("title-inactive");
+            summaryToggle.classList.remove("title-inactive");
+        })
     }
 
-    function buildEvaluations(model, domElement, collapsed) {
+    function buildEvalsSettings(model) {
+
+        var settingsButton = document.getElementById("evals-settings"),
+            settingsBox = document.getElementById("evals-settings-box");
+
+        var settingsButtonRect = settingsButton.getBoundingClientRect();
+
+        settingsBox.style.left = settingsButtonRect.right - settingsBox.clientWidth + "px";
+        settingsBox.style.top = settingsButtonRect.bottom + "px";
+
+        settingsButton.addEventListener("mouseenter", function () {
+            settingsBox.classList.remove("hidden");
+        });
+        settingsButton.addEventListener("mouseleave", function () {
+            setTimeout(function () {
+                settingsBox.classList.add("hidden");
+            }, 200);          
+        });
+
+        var settingsFilterTypes = Object.keys(model.getDataNodeLocationTypes());
+        var settingsFilterTypesCheckBox = document.getElementById("evals-settings-filter-types-checkbox");
+        var settingsFilterTypesCheckbox =  buildCheckbox(settingsFilterTypes, "_locationType", settingsFilterTypesCheckBox);
+
+        var namesMapped = model.getDataNodeNames();
+
+        var settingsFilterNames = Object.keys(namesMapped).filter(function (name) {
+            return namesMapped[name].length > 1;
+        });
+        var settingsFilterNamesCheckbox = document.getElementById("evals-settings-filter-names-checkbox");
+        var settingsFilterNamesCheckboxes = buildCheckbox(settingsFilterNames, "_name", settingsFilterNamesCheckbox);
+
+        return model;
+    }
+
+    function buildEvaluations(model, domElement) {
 
         domElement.innerHTML = "";
 
+        var width = width = document.getElementById("evals-box").clientWidth * 0.95;
         var node = d3.select(domElement),
+            collapsed = true,
             dataNodes = model.getDataNodes().filter(function (dataNode) {
                 return dataNode.isActive;
             });
@@ -105,32 +156,13 @@
         dataNodes.forEach(function (dataNode) {
 
             var data = dataNode.findData(),
-                points = {},
+                points = formatToComparator(data),
                 id = aviation.core.string.generateUUID();
 
-            for (var scheme in data) {
+            var height = collapsed ? 10 : 100;
+            var comparator = d3.comparator({ height: height, width: width}).collapsed(collapsed);
 
-                points[scheme] = [];
-
-                for (var key in data[scheme]) {
-
-                    if (isTime(key)) {
-
-                        var dd = aviation.core.time.timeToDecimalDay(key);
-
-                        points[scheme].push({
-                            x: dd,
-                            y: Number(data[scheme][key])
-                        });
-                    }
-                }
-            }
-
-            var height = collapsed ? 10 : 100,
-                comparator = d3.comparator({ height: height }).collapsed(collapsed);
-
-            node.datum(points)
-                .call(comparator);
+            node.datum(points).call(comparator);
 
             comparator
                 .title(getName(dataNode, !comparator.isCollapsed()))
@@ -153,79 +185,129 @@
             dataNode.setAttribute("comparator", comparator);
         });
 
-        function isTime(testString) {
-            return testString.match(/\d*:\d*/g) != null;
+        return model;
+    }
+
+    function buildComparisons(model, domElement) {
+
+        var data = formatToAnalysis(model),
+            height = 200,
+            width = document.getElementById("evals-box").clientWidth * 0.95;
+        
+        console.log(data);
+
+        for (var type in data) {
+
+            var typeDiv = document.createElement("div");
+            typeDiv.id = type + "-comparisons";
+            typeDiv.classList.add("comparisons-box");
+
+            domElement.appendChild(typeDiv);
+
+            for (var scheme in data[type]) {
+
+                 data[type][scheme] = Object.keys(data[type][scheme]).reduce(function (obj, key) {
+
+                     var values = data[type][scheme][key],
+                         deviation = d3.deviation(values),
+                         mean = d3.mean(values),
+                         ret;
+                     
+
+                     var qVals = [],
+                         qMean,
+                         qDev;
+
+                     for (var i = 0; i < values.length; i++) {
+                         
+                         if (values[i] >= mean - 2 * deviation &&
+                             values[i] <= mean + 2 * deviation) {
+
+                             qVals.push(values[i]);
+                         }
+                     }
+
+                     qMean = d3.mean(qVals);
+                     qDev = d3.deviation(qVals);
+
+                     ret = qMean
+                         ? qMean
+                         : mean
+
+                     ret = mean - deviation;
+
+                     obj[key] = ret > 0 ? ret : 0;
+
+                    return obj;
+
+                }, {});
+            }
+
+            var node = d3.select(typeDiv);
+            var points = formatToComparator(data[type]);
+            var comparator = d3.comparator({
+                height: height,
+                width: width,
+                opacity: 0.3
+            }).collapsed(false);
+
+            node.datum(points).call(comparator);
+
+            comparator
+                .title(type + " occupancy values")
+                .setHighlightedValue(+slider.value);
+
+            comparisonComparators.push(comparator);
         }
 
         return model;
     }
 
-    function buildEvaluationSettings(model) {
+    function buildSummary(model, domElement) {
 
-        var settingsButton = document.getElementById("evals-settings"),
-            settingsBox = document.getElementById("evals-settings-box");
+    }
+
+    function buildSceneSettings(model) {
+
+        var settingsButton = document.getElementById("scene-settings"),
+            settingsBox = document.getElementById("scene-settings-box");
 
         var settingsButtonRect = settingsButton.getBoundingClientRect();
 
+        var settingsTextToggleItem = document.getElementById("text-toggle-info"),
+            settingsTextToggleCheckBox = document.getElementById("text-toggle-input");
+
+        var dataNodes = model.getDataNodes();
+
         settingsBox.style.left = settingsButtonRect.right - settingsBox.clientWidth + "px";
         settingsBox.style.top = settingsButtonRect.bottom + "px";
-
         settingsButton.addEventListener("mouseenter", function () {
             settingsBox.classList.remove("hidden");
         });
         settingsButton.addEventListener("mouseleave", function () {
-            settingsBox.classList.add("hidden");
+
+            setTimeout(function () {
+
+                settingsBox.classList.add("hidden");
+
+            }, 200);
         });
 
-        var types = Object.keys(model.getDataNodeLocationTypes());
+        settingsTextToggleItem.addEventListener("click", function () {
 
-        var settingsFilterTypesCheckBox = document.getElementById("evals-settings-filter-types-checkbox");
+            settingsTextToggleCheckBox.checked = !settingsTextToggleCheckBox.checked
+            eventFire(settingsTextToggleCheckBox, "change");
+        });
 
-        for (var i = 0; i < types.length; i++) {
+        settingsTextToggleCheckBox.addEventListener("change", function () {
 
-            var template = document.querySelector("#filter-types-checkbox-template");
-            var clone = document.importNode(template.content, true);
+            for (var i = 0; i < dataNodes.length; i++) {
 
-            var settingsSubItem = clone.querySelector("#filter-types-checkbox-item-"),
-                settingsSubItemInput = clone.querySelector("#filter-types-checkbox-input-"),
-                settingsSubItemInfo = clone.querySelector("#filter-types-checkbox-info-");
+                var tag = dataNodes[i].getAttribute("tag")
 
-            settingsSubItem.id += types[i];
-            settingsSubItemInput.id += types[i];
-            settingsSubItemInfo.id += types[i];
-
-            settingsSubItemInfo.innerHTML = types[i];
-
-            settingsSubItemInfo.addEventListener("click", (function () {
-
-                var item = document.getElementById("filter-types-checkbox-input-" + this);
-
-                item.checked = !item.checked
-                eventFire(item, "change");
-
-            }).bind(types[i]));
-
-            settingsSubItemInput.addEventListener("change", (function (locationType, e) {
-
-                var dataNodes = model.getDataNodes(),
-                    bool = e.srcElement.checked;
-
-                for (var j = 0; j < dataNodes.length; j++) {
-
-                    if (dataNodes[j].getLocationType() === locationType) {
-
-                        dataNodes[j].isActive = bool;
-                        dataNodes[j].getAttribute("tag").classList.toggle("collapsed");
-                        dataNodes[j]
-                            .getAttribute("comparator")
-                            .div[0][0]
-                            .classList.toggle("collapsed");
-                    }
-                }
-            }).bind(this, types[i]));
-
-            settingsFilterTypesCheckBox.appendChild(clone);
-        }
+                tag.classList.toggle("hidden");
+            }
+        });
 
         return model;
     }
@@ -239,19 +321,8 @@
         var dataNodes = model.getDataNodes().filter(function (dataNode) {
             return dataNode.isActive;
         });;
-
-        //camera = new THREE.PerspectiveCamera(45, width / height, 1, 2000);
-        //camera = new THREE.OrthographicCamera(width / -2, width / 2, height / 2, height / -2, -5000, 10000);
-        //scene = new THREE.Scene();
-        
-        var font;
-        var loader = new THREE.FontLoader();
-
-        loader.load('fonts/helvetiker_regular.typeface.json', function (response) {
-            font = response;
-        });
-
-        var viewer = new ThreeDxf.Viewer(model.getDXFData(), node, width, height, font);
+       
+        var viewer = new ThreeDxf.Viewer(model.getDXFData(), node, width, height);
 
         scene = viewer.scene;
         renderer = viewer.renderer;
@@ -259,23 +330,12 @@
         controls = viewer.controls;
 
         controls.enableRotate = false;
-
-        //renderer.setPixelRatio(window.devicePixelRatio);
-        //renderer.setSize(width, height);
-        //renderer.setClearColor(0xffffff);
-
         controls.update();
 
-        raycaster = new THREE.Raycaster();
         mouse = new THREE.Vector2();
-
-        scenePoints = [];
-
         frustum = new THREE.Frustum();
         projScreenMatrix = new THREE.Matrix4();
 
-
-        //camera.position.set(161, -115, 9);
         camera.zoom = 0.004;
         camera.updateProjectionMatrix();
 
@@ -288,7 +348,6 @@
             var tag = buildTag(dataNode);
 
             scene.add(point);
-            scenePoints.push(point);
 
             dataNode.setAttribute("tag", tag);
             dataNode.setAttribute("point", point);
@@ -308,8 +367,6 @@
 
         function onCameraChange() {
 
-            var domElement = document.getElementById("scene-tags");
-
             dataNodes.forEach(function (dataNode, i) {
 
                 var point = dataNode.getAttribute("point"),
@@ -328,14 +385,14 @@
 
                 if (!frustum.intersectsObject(point)) {
 
-                    if (domElement.contains(tag)) {
-                        domElement.removeChild(tag);
+                    if (tags.contains(tag)) {
+                        tags.removeChild(tag);
                     }
                 }
                 else {
 
-                    if (!domElement.contains(tag)) {
-                        domElement.appendChild(tag);
+                    if (!tags.contains(tag)) {
+                        tags.appendChild(tag);
                     }
                     tag.style.left = posX;
                     tag.style.top = posY;
@@ -363,7 +420,6 @@
         }
         
         function onDocumentMouseMove(event) {
-            //event.preventDefault();
             mouse.x = (event.clientX / window.innerWidth) * 2 - 1;
             mouse.y = -(event.clientY / window.innerHeight) * 2 + 1;
         }
@@ -380,60 +436,28 @@
         return model;
     }
 
-    function buildSceneSettings(model) {
-
-        var settingsButton = document.getElementById("scene-settings"),
-            settingsBox = document.getElementById("scene-settings-box");
-
-        var settingsButtonRect = settingsButton.getBoundingClientRect();
-
-        var settingsTextToggleItem = document.getElementById("text-toggle-info"),
-            settingsTextToggleCheckBox = document.getElementById("text-toggle-input");
-
-        var dataNodes = model.getDataNodes();
-
-        settingsBox.style.left = settingsButtonRect.right - settingsBox.clientWidth + "px";
-        settingsBox.style.top = settingsButtonRect.bottom + "px";
-        settingsButton.addEventListener("mouseenter", function () {
-            settingsBox.classList.remove("hidden");
-        });
-        settingsButton.addEventListener("mouseleave", function () {
-            settingsBox.classList.add("hidden");
-        });
-
-        settingsTextToggleItem.addEventListener("click", function () {
-            settingsTextToggleCheckBox.checked = !settingsTextToggleCheckBox.checked
-            eventFire(settingsTextToggleCheckBox, "change");
-        });
-
-        settingsTextToggleCheckBox.addEventListener("change", function () {
-
-            for (var i = 0; i < dataNodes.length; i++) {
-
-                var tag = dataNodes[i].getAttribute("tag")
-
-                tag.classList.toggle("hidden");
-            }
-        });
-
-        return model;
-    }
-
     function buildSlider(model) {
         
         var dataNodes = model.getDataNodes();
 
         slider.addEventListener("change", function () {
 
+            var value = +this.value;
+
             for (var i = 0; i < dataNodes.length; i++) {
 
-                var value = +this.value,
-                    comparator = dataNodes[i].getAttribute("comparator"),
+                var comparator = dataNodes[i].getAttribute("comparator"),
                     point = dataNodes[i].getAttribute("point"),
                     color = dataNodes[i].getAttribute("colors")[value];
 
                 comparator.setHighlightedValue(value);
                 point.material.color.set(color);
+            }
+
+            for (var i = 0; i < comparisonComparators.length; i++) {
+
+                var comparator = comparisonComparators[i];
+                comparator.setHighlightedValue(value)
             }
         })
 
@@ -441,6 +465,8 @@
 
             time.innerHTML = aviation.core.time.decimalDayToTime(+this.value / 24);
         });
+
+        return model;
     }
 
     function buildPoint(dataNode) {
@@ -477,6 +503,70 @@
         var point = new THREE.Points(pointGeom, pointMat);
 
         return point;
+    }
+
+    function buildCheckbox(types, property, domElement) {
+
+        var clones = [];
+
+        for (var i = 0; i < types.length; i++) {
+
+            var template = document.querySelector("#filter-types-checkbox-template");
+            var clone = document.importNode(template.content, true);
+
+            var settingsSubItem = clone.querySelector("#filter-types-checkbox-item-"),
+                settingsSubItemInput = clone.querySelector("#filter-types-checkbox-input-"),
+                settingsSubItemInfo = clone.querySelector("#filter-types-checkbox-info-");
+
+            settingsSubItem.id += types[i];
+            settingsSubItemInput.id += types[i];
+            settingsSubItemInfo.id += types[i];
+
+            settingsSubItemInfo.innerHTML = types[i];
+
+            settingsSubItemInfo.addEventListener("click", (function () {
+
+                var item = document.getElementById("filter-types-checkbox-input-" + this);
+
+                item.checked = !item.checked
+                eventFire(item, "change");
+
+            }).bind(types[i]));
+
+            settingsSubItemInput.addEventListener("change", (function (locationType, e) {
+
+                var dataNodes = model.getDataNodes(),
+                    bool = e.srcElement.checked;
+
+                for (var j = 0; j < dataNodes.length; j++) {
+
+                    if (dataNodes[j][property] === locationType) {
+
+                        dataNodes[j].isActive = bool;
+
+                        if (bool) {
+                            dataNodes[j].getAttribute("tag").classList.remove("collapsed");
+                            dataNodes[j]
+                                .getAttribute("comparator")
+                                .div[0][0]
+                                .classList.remove("collapsed");
+                        }
+                        else {
+                            dataNodes[j].getAttribute("tag").classList.add("collapsed");
+                            dataNodes[j]
+                                .getAttribute("comparator")
+                                .div[0][0]
+                                .classList.add("collapsed");
+                        }
+                    }
+                }
+            }).bind(this, types[i]));
+
+            clones.push(clone);
+            domElement.appendChild(clone);
+        }
+
+        return clones;
     }
 
     function buildTag(dataNode) {
@@ -589,15 +679,112 @@
     }
 
     function getName(dataNode, bool) {
-        //return !bool ? dataNode.getName().slice(0, 11) : dataNode.getName();
+
         return dataNode.getName();
     }
 
     function convert(vec) {
-        //return new THREE.Vector3(vec.x, vec.z, -vec.y);
+
         return new THREE.Vector3(vec.y, -vec.x, vec.z);
-        //return vec;
     }
+
+    ///
+    /// formatting methods
+    /// --------------------------------------------
+    ///
+
+    function formatToAnalysis(model) {
+
+        var dataTypes = model.getDataNodeNames();
+        var __ = {};
+
+        for (var type in dataTypes) {
+
+            if (dataTypes[type].length > 1) {
+
+                var schemes = {};
+
+                for (var i = 0; i < dataTypes[type].length; i++) {
+
+                    var dataNode = dataTypes[type][i],
+                        data = dataNode.findData();
+
+                    for (var scheme in data) {
+
+                        if (!(scheme in schemes)) {
+
+                            schemes[scheme] = [];
+                        }
+
+                        schemes[scheme].push(data[scheme]);
+                    }
+                }
+
+                for (var scheme in schemes) {
+
+                    var attributes = {};
+
+                    for (var i = 0; i < schemes[scheme].length; i++) {
+
+                        var dimension = +schemes[scheme][i]["Dimension"];
+
+                        for (var attribute in schemes[scheme][i]) {
+
+                            if (aviation.core.time.isTime(attribute)) {
+
+                                if (!(attribute in attributes)) {
+
+                                    attributes[attribute] = [];
+                                }
+
+                                attributes[attribute].push(+schemes[scheme][i][attribute] / dimension);
+                            }
+                        }
+                    }
+
+                    schemes[scheme] = attributes;
+                }
+
+                __[type] = schemes;
+            }
+        }
+
+        return __;
+    }
+
+    function formatToComparator(obj) {
+
+        var __ = {};
+
+        for (var scheme in obj) {
+
+            __[scheme] = [];
+
+            for (var key in obj[scheme]) {
+
+                if (aviation.core.time.isTime(key)) {
+
+                    var dd = aviation.core.time.timeToDecimalDay(key);
+
+                    __[scheme].push({
+                        x: dd,
+                        y: Number(obj[scheme][key])
+                    });
+                }
+            }
+        }
+
+        return __;
+    }
+
+    function formatToSpiderGraph(obj) {
+
+    }
+
+    ///
+    /// helper mathods
+    /// --------------------------------------------
+    ///
 
     // http://stackoverflow.com/questions/2705583/how-to-simulate-a-click-with-javascript
     function eventFire(el, etype) {
@@ -608,6 +795,60 @@
             evObj.initEvent(etype, true, false);
             el.dispatchEvent(evObj);
         }
+    }
+
+    function mode(arr) {
+
+        var __ = {},
+            mode = arr[0];
+
+        arr.forEach(function (i) {
+
+            if (!(i in __)) { __[i] = 0; }
+            __[i]++;
+
+        });
+
+        for (var i in __) {
+            if (__[i] > __[mode]) { mode = i; }
+        }
+
+        return mode;
+    }
+
+    function readFile(file, cb) {
+
+        function readTextFile(file, cb) {
+            var rawFile = new XMLHttpRequest();
+            rawFile.responseType = "blob"
+            rawFile.open("GET", file, true);
+            rawFile.onreadystatechange = function () {
+
+                if (rawFile.readyState === 4) {
+                    if (rawFile.status === 200 || rawFile.status == 0) {
+
+                        var response = rawFile.response;
+
+                        cb(response);
+                    }
+                }
+            }
+            rawFile.send(null);
+        }
+
+        var reader = new FileReader();
+
+        reader.onprogress = updateProgress;
+        reader.onabort = abortUpload;
+        reader.onerror = errorHandler;
+
+        reader.onloadend = function (evt) {
+            cb(onSuccess(evt));
+        };
+
+        readTextFile(file, function (data) {
+            reader.readAsText(data);
+        });
     }
 
     function abortUpload() {
