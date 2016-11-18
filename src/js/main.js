@@ -156,8 +156,13 @@
         dataNodes.forEach(function (dataNode) {
 
             var data = dataNode.findData(),
-                points = formatToComparator(data),
+                dataFormatted = formatToComparator(data);
                 id = aviation.core.string.generateUUID();
+
+                var points = [
+                    { mid: dataFormatted[0], dir: 1},
+                    { mid: dataFormatted[1], dir: -1}
+                ]
 
             var height = collapsed ? 10 : 100;
             var comparator = d3.comparator({ height: height, width: width}).collapsed(collapsed);
@@ -194,7 +199,7 @@
             height = 200,
             width = document.getElementById("evals-box").clientWidth * 0.95;
         
-        console.log(data);
+        //console.log(data);
 
         for (var type in data) {
 
@@ -204,47 +209,47 @@
 
             domElement.appendChild(typeDiv);
 
+            var dataFormatted = [];
+
+            console.log("-----------------------")
+
             for (var scheme in data[type]) {
 
-                 data[type][scheme] = Object.keys(data[type][scheme]).reduce(function (obj, key) {
+                var schemeFormatted = {
+                    min: {},
+                    max: {},
+                    mid: {},
+                    qMin: {},
+                    qMax: {}
+                };
 
-                     var values = data[type][scheme][key],
-                         deviation = d3.deviation(values),
-                         mean = d3.mean(values),
-                         ret;
-                     
+                for (var key in data[type][scheme]) {
 
-                     var qVals = [],
-                         qMean,
-                         qDev;
+                    var values = data[type][scheme][key],
+                        deviation = d3.deviation(values),
+                        mean = d3.mean(values),
+                        max = d3.max(values),
+                        min = d3.min(values);
+                    
+                    schemeFormatted.min[key] = min;
+                    schemeFormatted.max[key] = max;
+                    schemeFormatted.mid[key] = mean;
+                    schemeFormatted.qMin[key] = mean - (2 * deviation);
+                    schemeFormatted.qMax[key] = mean + (2 * deviation);
+                }
 
-                     for (var i = 0; i < values.length; i++) {
-                         
-                         if (values[i] >= mean - 2 * deviation &&
-                             values[i] <= mean + 2 * deviation) {
+                dataFormatted.push(schemeFormatted);
 
-                             qVals.push(values[i]);
-                         }
-                     }
-
-                     qMean = d3.mean(qVals);
-                     qDev = d3.deviation(qVals);
-
-                     ret = qMean
-                         ? qMean
-                         : mean
-
-                     ret = mean - deviation;
-
-                     obj[key] = ret > 0 ? ret : 0;
-
-                    return obj;
-
-                }, {});
             }
+            
+            var comparatorData0 = formatToComparator(dataFormatted[0]),
+                comparatorData1 = formatToComparator(dataFormatted[1]);
+
+            comparatorData0.dir = 1;
+            comparatorData1.dir = -1;
 
             var node = d3.select(typeDiv);
-            var points = formatToComparator(data[type]);
+            var points = [comparatorData0, comparatorData1];
             var comparator = d3.comparator({
                 height: height,
                 width: width,
@@ -254,7 +259,7 @@
             node.datum(points).call(comparator);
 
             comparator
-                .title(type + " occupancy values")
+                .title(type + " Density Values")
                 .setHighlightedValue(+slider.value);
 
             comparisonComparators.push(comparator);

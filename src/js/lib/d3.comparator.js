@@ -11,8 +11,7 @@ d3.comparator = function(config) {
         yScale: d3.scale.linear(),
         fontSize: 8,
         fontPadding: 2,
-        var1Color: "#cc0000",
-        var2Color: "#006699",
+        schemeColors: ["#cc0000","#006699"],
         blendColor: "#ffffff",
         colors: [],
         id: null,
@@ -85,11 +84,11 @@ d3.comparator = function(config) {
              .attr("d", lineFunc([
                 {
                     x: __.margin.left,
-                    y: __.height / 2 - __.yScale(cp.yMax1)
+                    y: __.height / 2 + __.yScale(cp.yMaxTop)
                 },
                 {
-                    x: __.xScale(cp.xMax1) + __.margin.left,
-                    y: __.height / 2 - __.yScale(cp.yMax1)
+                    x: __.xScale(cp.xMaxTop),
+                    y: __.height / 2 + __.yScale(cp.yMaxTop)
                 },
              ]))
             .attr("stroke", stroke)
@@ -103,11 +102,11 @@ d3.comparator = function(config) {
              .attr("d", lineFunc([
                 {
                     x: __.margin.left,
-                    y: __.height / 2 + __.yScale(cp.yMax2)
+                    y: __.height / 2 - __.yScale(cp.yMaxBottom)
                 },
                 {
-                    x: __.xScale(cp.xMax2) + __.margin.left,
-                    y: __.height / 2 + __.yScale(cp.yMax2)
+                    x: __.xScale(cp.xMaxBottom),
+                    y: __.height / 2 - __.yScale(cp.yMaxBottom)
                 },
              ]))
             .attr("stroke", stroke)
@@ -119,31 +118,33 @@ d3.comparator = function(config) {
         // top text
 	    cp.legendGroup.append("text")
             .attr("x", __.margin.left + __.fontPadding)
-            .attr("y", __.margin.top - __.yScale(cp.yMax1) + __.height / 2)
-            .text(round(cp.yMax1, 2), 1)
+            .attr("y", __.margin.top - __.yScale(cp.yMaxTop) + __.height / 2)
+            .text(round(cp.yMaxTop, 2), 1)
             .style("font-size", __.fontSize + "px");
 
         // bottom text
 	    cp.legendGroup.append("text")
             .attr("x", __.margin.left + __.fontPadding)
-            .attr("y", __.margin.top + __.yScale(cp.yMax2) + __.height / 2)
-            .text(round(cp.yMax2, 2), 1)
+            .attr("y", __.margin.top + __.yScale(cp.yMaxBottom) + __.height / 2)
+            .text(round(cp.yMaxBottom, 2), 1)
             .style("font-size", __.fontSize + "px");
+
+	    return cp;
     }
 
-    cp.buildTable = function() {
+    cp.buildTable = function () {
 
         cp.tableGroup = cp.svg.append("g");
 
-        var yVals1 = __.data[0].map(function (d) { return d.y; }),
-            yVals2 = __.data[1].map(function (d) { return d.y; });
+        var yVals1 = __.data[Object.keys(__.data)[0]].mid.map(function (d) { return d.y; }),
+            yVals2 = __.data[Object.keys(__.data)[1]].mid.map(function (d) { return d.y; });
 
         var yMax = Math.abs(d3.max(yVals1) + d3.max(yVals2)) * 0.75;
 
-        var color_scale1 = d3.scale.linear().domain([0, yMax]).range([__.blendColor, __.var1Color]);
-        var color_scale2 = d3.scale.linear().domain([0, yMax]).range([__.blendColor, __.var2Color]);
+        var color_scaleTop = d3.scale.linear().domain([0, yMax]).range([__.blendColor, __.schemeColors[0]]);
+        var color_scaleBottom = d3.scale.linear().domain([0, yMax]).range([__.blendColor, __.schemeColors[1]]);
 
-        var xLocations = __.data[0].map(function (d) { return __.xScale(d.x); }),
+        var xLocations = __.data[Object.keys(__.data)[0]].mid.map(function (d) { return __.xScale(d.x); }),
             delta = xLocations[1] - xLocations[0];
 
         if (__.collapsed) {
@@ -160,9 +161,9 @@ d3.comparator = function(config) {
             var color;
 
             if (val > 0) {
-                color = color_scale1(val);
+                color = color_scaleTop(val);
             } else {
-                color = color_scale2(-val);
+                color = color_scaleBottom(-val);
             }
 
             __.colors.push(color);
@@ -188,7 +189,51 @@ d3.comparator = function(config) {
         cp.buildTableOutlines();
 
         return cp;
-    }
+    };
+
+    cp.buildPolyline = function (data, dir, color, weight, fill) {
+
+        var startPoint = {
+            x: data[0].x,
+            y: 0
+        };
+
+        var endPoint = {
+            x: data[data.length - 1].x,
+            y: 0
+        };
+
+        var allPoints = data.slice(0);
+
+        allPoints.splice(0, 0, startPoint);
+        allPoints.push(endPoint);
+
+        cp.dataGroup.append("path")
+            .attr("d", lineFunc(allPoints.map(function (d) {
+
+                var point =  {
+                    x: __.xScale(d.x),
+                    y: dir * __.yScale(d.y) + __.height / 2
+                }
+
+                cp.dataGroup.append("circle")
+                    .attr("class", "data-point")
+                    .attr("r", weight)
+                    .attr("cx", point.x)
+                    .attr("cy", point.y)
+                    .attr("fill", color)
+                    .attr("stroke", "None")
+
+                return point;
+
+            })))
+            .attr("stroke-width", weight)
+            .attr("fill", (fill ? color : "None"))
+            .attr("fill-opacity", 0.5)
+            .attr("stroke", color)
+
+        return cp;
+    };
 
     cp.build = function () {
 
@@ -197,84 +242,143 @@ d3.comparator = function(config) {
         var xVals = [],
             yVals = [];
 
-        cp.xMax1 = 0,
-        cp.xMax2 = 0;
+        cp.xMaxTop = 0;
+        cp.yMaxTop = 0;
+        
+        cp.xMaxBottom = 0;
+        cp.yMaxBottom = 0;
 
-        cp.yMax1 = 0,
-        cp.yMax2 = 0;
+        cp.xMinTop = 0;
+        cp.yMinTop = 0;
+
+        cp.xMinBottom = 0;
+        cp.yMinBottom = 0;
 
         for (var key in __.data) {
 
-            __.data[key].forEach(function (d) {
+            var scheme = __.data[key];
 
-                if (key % 2 == 0) {
-                    if (d.y > cp.yMax1) {
-                        cp.xMax1 = d.x;
-                        cp.yMax1 = d.y;
-                    }
-                }
-                else if (key % 2 == 1) {
-                    if (d.y > cp.yMax2) {
-                        cp.xMax2 = d.x;
-                        cp.yMax2 = d.y;
-                    }
-                }
+            if (scheme.max !== undefined) {
 
-                xVals.push(d.x);
-                yVals.push(d.y)
-            })
+                scheme.max.forEach(function (d) {
+
+                    if (scheme.dir === 1) {
+
+                        if (d.y > cp.yMaxTop) {
+                            cp.xMaxTop = d.x;
+                            cp.yMaxTop = d.y;
+                        }
+                    }
+                    else if (scheme.dir === -1) {
+
+                        if (d.y > cp.yMaxBottom) {
+                            cp.xMaxBottom = d.x;
+                            cp.yMaxBottom = d.y;
+                        }
+                    }
+
+                    xVals.push(d.x);
+                    yVals.push(d.y)
+                });
+            }
+
+            if (scheme.min !== undefined) {
+
+                scheme.min.forEach(function (d) {
+
+                    if (scheme.dir === 1) {
+
+                        if (d.y < cp.yMinTop) {
+                            cp.xMinTop = d.x;
+                            cp.yMinTop = d.y;
+                        }
+                    }
+                    else if (scheme.dir === -1) {
+
+                        if (d.y > cp.yMinBottom) {
+                            cp.xMinBottom = d.x;
+                            cp.yMinBottom = d.y;
+                        }
+                    }
+
+                    xVals.push(d.x);
+                    yVals.push(d.y)
+                });
+            }
+
+            if (scheme.mid !== undefined) {
+
+                scheme.mid.forEach(function (d) {
+
+                    if (scheme.dir === 1) {
+
+                        if (d.y > cp.yMaxTop) {
+                            cp.xMaxTop = d.x;
+                            cp.yMaxTop = d.y;
+                        }
+                    }
+                    else if (scheme.dir === -1) {
+
+                        if (d.y > cp.yMaxBottom) {
+                            cp.xMaxBottom = d.x;
+                            cp.yMaxBottom = d.y;
+                        }
+                    }
+
+                    xVals.push(d.x);
+                    yVals.push(d.y)
+                });
+            }
         }
 
-        __.xScale.domain([0, d3.max(xVals)]).range([0, __.width - __.margin.right]);
+        __.xScale.domain([0, d3.max(xVals)]).range([__.margin.left, __.width - __.margin.right]);
         __.yScale.domain([0, d3.max(yVals)]).range([0, __.height / 4]);
+
+
+        for (var i = 0; i < scheme.mid.length; i++) {
+
+            if (scheme.mid && scheme.min && scheme.max) {
+
+                var min = __.yScale(scheme.min[i].y);
+                var mid = __.yScale(scheme.mid[i].y);
+                var max = __.yScale(scheme.max[i].y);
+            }
+        }
 
         cp.buildTable();
 
         if (!__.collapsed) {
 
             for (var key in __.data) {
+                
+                var scheme = __.data[key],
+                    color = __.schemeColors[(scheme.dir == 1 ? 0 : 1)];
 
-                var mul,
-                    color;
+                if (scheme.min !== undefined &&  scheme.max !== undefined) {
 
-                if (key == 0) {
-                    mul = -1;
-                    color = __.var1Color;
+                    var polylinePoints = scheme.min.slice(0)
+
+                    polylinePoints.reverse();
+                    polylinePoints = polylinePoints.concat(scheme.max.slice(0));
+
+                    cp.buildPolyline(polylinePoints, scheme.dir, color, 1, true);
+                    cp.buildPolyline(scheme.mid, scheme.dir, color, 3, false);
+
+                    if (scheme.qMin && scheme.qMax) {
+
+                        var qPolylinePoints = scheme.qMin.slice(0);
+
+                        qPolylinePoints.reverse();
+                        qPolylinePoints = polylinePoints.concat(scheme.qMax.slice(0));
+
+                        //cp.buildPolyline(qPolylinePoints, scheme.dir, color, 0.5, true);
+                    }
                 }
+
                 else {
-                    mul = 1;
-                    color = __.var2Color;
+
+                    cp.buildPolyline(scheme.mid, scheme.dir, color, 1,  true);
                 }
-
-                var startPoint = {
-                    x: __.data[key][0].x,
-                    y: 0
-                };
-
-                var endPoint = {
-                    x: __.data[key][__.data[key].length - 1].x,
-                    y: 0
-                };
-
-                var allPoints = __.data[key].slice(0);
-
-                allPoints.splice(0,0, startPoint);
-                allPoints.push(endPoint);
-               
-                cp.dataGroup.append("path")
-                    .attr("d", lineFunc(allPoints.map(function (d) {
-
-                        return {
-                            x: __.xScale(d.x),
-                            y: mul * __.yScale(d.y) + __.height / 2
-                        }
-
-                    })))
-                    .attr("stroke", "grey")
-                    .attr("stroke-width", 1)
-                    .attr("fill", color)
-                    .attr("fill-opacity", 0.5)
-                    .attr("stroke", color)
             }
 
             cp.buildLegend();
@@ -307,6 +411,8 @@ d3.comparator = function(config) {
                 });
             }
         }
+
+        return cp;
     }
 
     cp.width = function(val) {
