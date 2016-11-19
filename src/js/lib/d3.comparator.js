@@ -28,7 +28,7 @@ d3.comparator = function(config) {
         .y(function (d) { return d.y; })
         .interpolate('linear');
 
-	var cp = function(selection) {
+    var cp = function (selection) {
 
 	    selection = cp.selection = d3.select(selection);
 		
@@ -42,6 +42,7 @@ d3.comparator = function(config) {
 
 	    cp.svg = cp.div
             .append("svg")
+                .attr("class", "comparator-svg")
                 .attr("width", __.width)
                 .attr("height", __.height)
         
@@ -370,7 +371,6 @@ d3.comparator = function(config) {
 
                         qPolylinePoints.reverse();
                         qPolylinePoints = polylinePoints.concat(scheme.qMax.slice(0));
-
                         //cp.buildPolyline(qPolylinePoints, scheme.dir, color, 0.5, true);
                     }
                 }

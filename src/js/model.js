@@ -122,58 +122,65 @@ DataNode.prototype = {
 
 function Model() {
 
-    this._dataNodes = [];
-    this._dataNodeLocationTypes = {};
-    this._dataNodeNames = {};
-    this._dxf = null;
-}
-Model.prototype = {
+    var _dataNodes = [];
+    var _dataNodeLocationTypes = {};
+    var _dataNodeLocationTypeValues = {};
+    var _dataNodeNames = {};
+    var _dxf = null;
 
-    setDataNodes: function (dataNodes) {
+    this.setDataNodes = function (dataNodes) {
 
-        this._dataNodes = dataNodes;
+        _dataNodes = dataNodes;
 
-        for (var i = 0; i < this._dataNodes.length; i++) {
+        for (var i = 0; i < _dataNodes.length; i++) {
 
-            var dataNode = this._dataNodes[i];
+            var dataNode = _dataNodes[i];
 
-            if (!(dataNode.getLocationType() in this._dataNodeLocationTypes)) {
-                this._dataNodeLocationTypes[dataNode.getLocationType()] = [];
+            if (!(dataNode.getLocationType() in _dataNodeLocationTypes)) {
+                _dataNodeLocationTypes[dataNode.getLocationType()] = [];
             }
 
-            if (!(dataNode.getName() in this._dataNodeNames)) {
-                this._dataNodeNames[dataNode.getName()] = [];
+            if (!(dataNode.getName() in _dataNodeNames)) {
+                _dataNodeNames[dataNode.getName()] = [];
             }
 
-            this._dataNodeLocationTypes[dataNode.getLocationType()].push(dataNode);
-            this._dataNodeNames[dataNode.getName()].push(dataNode);
+            _dataNodeLocationTypes[dataNode.getLocationType()].push(dataNode);
+            _dataNodeNames[dataNode.getName()].push(dataNode);
         }
-    },
+    };
 
-    getDataNodes: function () {
+    this.getDataNodes = function () {
 
-        return this._dataNodes;
-    },
+        return _dataNodes;
+    };
 
-    getDataNodeLocationTypes: function () {
+    this.getDataNodeLocationTypes = function () {
 
-        return this._dataNodeLocationTypes;
-    },
+        return _dataNodeLocationTypes;
+    };
 
-    getDataNodeNames: function () {
+    this.setDataNodeLocationTypeValues = function (value) {
 
-        return this._dataNodeNames;
-    },
+        _dataNodeLocationTypeValues = value;
+    };
 
-    setDXFData: function (dxf) {
+    this.getDataNodeLocationTypeValues = function () {
 
-        this._dxf = dxf;
-    },
+        return _dataNodeLocationTypeValues;
+    };
 
-    getDXFData: function () {
+    this.getDataNodeNames = function () {
 
-        return this._dxf;
-    }
+        return _dataNodeNames;
+    };
 
+    this.setDXFData = function (dxf) {
 
+        _dxf = dxf;
+    };
+
+    this.getDXFData = function () {
+
+        return _dxf;
+    };
 }

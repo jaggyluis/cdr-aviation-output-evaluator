@@ -39,6 +39,15 @@
     pointer-events: none;
 }
 
+#scene-selector {
+    height: 92%;
+    position: absolute;
+    width: 59%;
+    overflow: hidden;
+    pointer-events: none;
+    z-index: 500;
+}
+
 #evals-box {
     width: 39.5%;
     height: 90%;
@@ -77,6 +86,11 @@
     height: 200px;
     background-color: white;
     border: 1px solid #f2f2f2;
+}
+
+.summary-box {
+    //background-color: white;
+    padding-top: 15px;
 }
 
 .title-bar {
@@ -210,20 +224,28 @@
     background-color: white;
 }
 
-
-
-/*
-    basic types
-*/
-
-svg {
-    //border-bottom: 2px solid #f2f2f2;
-}
-
-svg:hover {
-    //border: 1px solid #f2f2f2;
+.comparator-svg:hover {
     background-color: #f2f2f2;
 }
+
+.selection {
+    stroke          : gray;
+    stroke-width    : 1px;
+    stroke-dasharray: 4px;
+    stroke-opacity  : 0.5;
+    fill            : transparent;
+}
+
+.selecting {
+    border: 1px solid black;
+    pointer-events: all !important;
+}
+
+.state {
+    stroke  : gray;
+    fill    : white;
+}
+
 
 /*
     attributes
@@ -255,4 +277,6 @@ svg:hover {
 
 .color-default {
 }
+
+
 
