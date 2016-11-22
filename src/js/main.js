@@ -1,7 +1,7 @@
 ﻿/// <reference path="lib/d3.selector.js" />
 /// <reference path="lib/d3.selector.js" />
 /// <reference path="lib/d3.selector.js" />
-/// <reference path="lib/aviation.min.js" />
+/// <reference path="lib/cdr.min.js" />
 /// <reference path="lib/three-dxf.js" />
 /// <reference path="lib/d3.v3.min.js" />
 /// <reference path="model.js" />
@@ -184,7 +184,7 @@
 
             var data = dataNode.findData(),
                 dataFormatted = formatToComparator(data);
-                id = aviation.core.string.generateUUID();
+                id = cdr.core.string.generateUUID();
 
                 var points = [
                     { mid: dataFormatted[0], dir: 1},
@@ -254,13 +254,15 @@
                         deviation = d3.deviation(values),
                         mean = d3.mean(values),
                         max = d3.max(values),
-                        min = d3.min(values);
+                        min = d3.min(values),
+                        q1 = d3.quantile(values, 0.75),
+                        q3 = d3.quantile(values, 0.25);
                     
                     schemeFormatted.min[key] = min;
                     schemeFormatted.max[key] = max;
                     schemeFormatted.mid[key] = mean;
-                    schemeFormatted.qMin[key] = mean - (2 * deviation);
-                    schemeFormatted.qMax[key] = mean + (2 * deviation);
+                    schemeFormatted.qMin[key] = q1
+                    schemeFormatted.qMax[key] = q3
                 }
 
                 dataFormatted.push(schemeFormatted);
@@ -564,7 +566,7 @@
 
         slider.addEventListener("mousemove", function () {
 
-            time.innerHTML = aviation.core.time.decimalDayToTime(+this.value / 24);
+            time.innerHTML = cdr.core.time.decimalDayToTime(+this.value / 24);
         });
 
         return model;
@@ -874,7 +876,7 @@
 
                         for (var attribute in schemes[scheme][i]) {
 
-                            if (aviation.core.time.isTime(attribute)) {
+                            if (cdr.core.time.isTime(attribute)) {
 
                                 if (!(attribute in attributes)) {
 
@@ -906,9 +908,9 @@
 
             for (var key in obj[scheme]) {
 
-                if (aviation.core.time.isTime(key)) {
+                if (cdr.core.time.isTime(key)) {
 
-                    var dd = aviation.core.time.timeToDecimalDay(key);
+                    var dd = cdr.core.time.timeToDecimalDay(key);
 
                     __[scheme].push({
                         x: dd,
