@@ -1,5 +1,5 @@
 ﻿
-d3.comparator = function(config) {
+d3.comparatorPline = function(config) {
 	
     var __ = {
         data: [],
@@ -119,14 +119,14 @@ d3.comparator = function(config) {
         // top text
 	    cp.legendGroup.append("text")
             .attr("x", __.margin.left + __.fontPadding)
-            .attr("y", __.margin.top - __.yScale(cp.yMaxTop) + __.height / 2)
+            .attr("y", __.margin.top + __.yScale(cp.yMaxTop) + __.height / 2)
             .text(round(cp.yMaxTop, 2), 1)
             .style("font-size", __.fontSize + "px");
 
         // bottom text
 	    cp.legendGroup.append("text")
             .attr("x", __.margin.left + __.fontPadding)
-            .attr("y", __.margin.top + __.yScale(cp.yMaxBottom) + __.height / 2)
+            .attr("y", __.margin.top - __.yScale(cp.yMaxBottom) + __.height / 2)
             .text(round(cp.yMaxBottom, 2), 1)
             .style("font-size", __.fontSize + "px");
 

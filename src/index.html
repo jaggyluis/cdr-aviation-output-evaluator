@@ -69,33 +69,12 @@
 
     </template>
 
-    <script>
-
-        function ticks(element) {
-
-            if ('list' in element && 'min' in element && 'max' in element && 'step' in element) {
-                var datalist = document.createElement('datalist'),
-                minimum = parseInt(element.getAttribute('min')),
-                step = parseInt(element.getAttribute('step')),
-                maximum = parseInt(element.getAttribute('max'));
-                datalist.id = element.getAttribute('list');
-                for (var i = minimum; i < maximum + step; i = i + step) {
-                    datalist.innerHTML += "<option value=" + i + "></option>";
-                }
-                element.parentNode.insertBefore(datalist, element.nextSibling);
-            }
-        }
-        var lists = document.querySelectorAll("input[type=range][list]"),
-        arr = Array.prototype.slice.call(lists);
-        arr.forEach(ticks);
-
-    </script>
-
     <!-- library imports -->
     <script src="js/lib/jquery.min.js"></script>
 
     <script src="js/lib/d3.v3.min.js"></script>
-    <script src="js/lib/d3.comparator.js"></script>
+    <script src="js/lib/d3.comparatorBox.js"></script>
+    <script src="js/lib/d3.comparatorPline.js"></script>
     <script src="js/lib/d3.selector.js"></script>
     <script src="js/lib/d3.radarChart.js"></script>
 

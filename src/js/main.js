@@ -77,7 +77,7 @@
 
         buildEvaluations(model, evaluationsFrame);
         buildComparisons(model, comparisonsFrame);
-        buildSummary(model, summaryFrame);
+        //buildSummary(model, summaryFrame);
 
         evaluationsToggle.addEventListener("click", function () {
 
@@ -192,7 +192,7 @@
                 ]
 
             var height = collapsed ? 10 : 100;
-            var comparator = d3.comparator({ height: height, width: width}).collapsed(collapsed);
+            var comparator = d3.comparatorPline({ height: height, width: width}).collapsed(collapsed);
 
             node.datum(points).call(comparator);
 
@@ -238,57 +238,29 @@
 
             var dataFormatted = [];
 
+            console.log(data[type]);
+
             for (var scheme in data[type]) {
 
-                var schemeFormatted = {
-                    min: {},
-                    max: {},
-                    mid: {},
-                    qMin: {},
-                    qMax: {}
-                };
-
-                for (var key in data[type][scheme]) {
-
-                    var values = data[type][scheme][key],
-                        deviation = d3.deviation(values),
-                        mean = d3.mean(values),
-                        max = d3.max(values),
-                        min = d3.min(values),
-                        q1 = d3.quantile(values, 0.75),
-                        q3 = d3.quantile(values, 0.25);
-                    
-                    schemeFormatted.min[key] = min;
-                    schemeFormatted.max[key] = max;
-                    schemeFormatted.mid[key] = mean;
-                    schemeFormatted.qMin[key] = q1
-                    schemeFormatted.qMax[key] = q3
-                }
-
-                dataFormatted.push(schemeFormatted);
+                dataFormatted.push(Object.keys(data[type][scheme]).map(function (k) {
+                    return data[type][scheme][k];
+                }))
             }
 
-            dataNodeLocationTypeValues[type] = dataFormatted;
-            
-            var comparatorData0 = formatToComparator(dataFormatted[0]),
-                comparatorData1 = formatToComparator(dataFormatted[1]);
-
-            comparatorData0.dir = 1;
-            comparatorData1.dir = -1;
+            console.log(dataFormatted);
 
             var node = d3.select(typeDiv);
-            var points = [comparatorData0, comparatorData1];
-            var comparator = d3.comparator({
+            var comparator = d3.comparatorBox({
                 height: height,
                 width: width,
-                opacity: 0.3
-            }).collapsed(false);
+                color: colorScale,
+                ignore: [0]
+            });
 
-            node.datum(points).call(comparator);
+            node.datum(dataFormatted)
+                .call(comparator)
 
-            comparator
-                .title(type + " density value range")
-                .setHighlightedValue(+slider.value);
+            comparator.title(type + " Occupancy Data Range");
 
             comparisonComparators.push(comparator);
         }
@@ -317,7 +289,7 @@
             maxValue: 0,
             levels: 5,
             ExtraWidthX: 200,
-            color: function (d) { return ["#cc0000", "#006699"][d]; } 
+            color: colorScale, 
         }
 
         for (var type in data) {
