@@ -238,16 +238,12 @@
 
             var dataFormatted = [];
 
-            console.log(data[type]);
-
             for (var scheme in data[type]) {
 
                 dataFormatted.push(Object.keys(data[type][scheme]).map(function (k) {
                     return data[type][scheme][k];
                 }))
             }
-
-            console.log(dataFormatted);
 
             var node = d3.select(typeDiv);
             var comparator = d3.comparatorBox({
@@ -532,7 +528,7 @@
             for (var i = 0; i < comparisonComparators.length; i++) {
 
                 var comparator = comparisonComparators[i];
-                comparator.setHighlightedValue(value)
+                comparator.highlighted(value)
             }
         })
 
