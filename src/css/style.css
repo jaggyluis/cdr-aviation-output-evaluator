@@ -9,6 +9,8 @@
     -moz-user-select: none;
     -ms-user-select: none;
     user-select: none;
+
+    cursor: default !important;
 }
 
 /*
@@ -83,9 +85,9 @@
 }
 
 .comparisons-box {
-    height: 200px;
+    //height: 200px;
     background-color: white;
-    border: 1px solid #f2f2f2;
+    //border: 1px solid #f2f2f2;
 }
 
 .summary-box {
@@ -98,6 +100,8 @@
     border-bottom: 1px solid #f2f2f2;
     width: 100%;
     background-color: white;
+    z-index: 1;
+    position: relative;
 }
 
 .title {

@@ -65,7 +65,8 @@ d3.selector = function (config) {
                         x: parseInt(s.attr("x"), 10),
                         y: parseInt(s.attr("y"), 10),
                         width: parseInt(s.attr("width"), 10),
-                        height: parseInt(s.attr("height"), 10)
+                        height: parseInt(s.attr("height"), 10),
+                        select: true
                     },
                     move = {
                         x: p[0] - d.x,
@@ -74,15 +75,17 @@ d3.selector = function (config) {
                 ;
 
                 if (move.x < 1 || (move.x * 2 < d.width)) {
-                    d.x = p[0];
-                    d.width -= move.x;
+                    //d.x = p[0];
+                    //d.width -= move.x;
+                    d.select = false;
                 } else {
                     d.width = move.x;
                 }
 
                 if (move.y < 1 || (move.y * 2 < d.height)) {
-                    d.y = p[1];
-                    d.height -= move.y;
+                    //d.y = p[1];
+                    //d.height -= move.y;
+                    d.select = false;
                 } else {
                     d.height = move.y;
                 }

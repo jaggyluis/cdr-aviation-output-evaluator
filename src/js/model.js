@@ -183,4 +183,63 @@ function Model() {
 
         return _dxf;
     };
+
+    this.getDataFormatted = function () {
+
+        var dataTypes = this.getDataNodeNames();
+        var __ = {};
+
+        for (var type in dataTypes) {
+
+            if (dataTypes[type].length > 1) {
+
+                var schemes = {};
+
+                for (var i = 0; i < dataTypes[type].length; i++) {
+
+                    var dataNode = dataTypes[type][i],
+                        data = dataNode.findData();
+
+                    for (var scheme in data) {
+
+                        if (!(scheme in schemes)) {
+
+                            schemes[scheme] = [];
+                        }
+
+                        schemes[scheme].push(data[scheme]);
+                    }
+                }
+
+                for (var scheme in schemes) {
+
+                    var attributes = {};
+
+                    for (var i = 0; i < schemes[scheme].length; i++) {
+
+                        var dimension = +schemes[scheme][i]["Dimension"];
+
+                        for (var attribute in schemes[scheme][i]) {
+
+                            if (cdr.core.time.isTime(attribute)) {
+
+                                if (!(attribute in attributes)) {
+
+                                    attributes[attribute] = [];
+                                }
+
+                                attributes[attribute].push(+schemes[scheme][i][attribute] / dimension);
+                            }
+                        }
+                    }
+
+                    schemes[scheme] = attributes;
+                }
+
+                __[type] = schemes;
+            }
+        }
+
+        return __;
+    };
 }

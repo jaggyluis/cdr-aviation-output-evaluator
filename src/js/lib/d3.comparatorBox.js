@@ -7,11 +7,13 @@
             width: null,
             height: null,
             color: null,
+            collapsed: false,
+            title: null,
             ignore: [],
             margin: { top: 10, right: 5, bottom: 5, left: 5 },
             xScale: d3.scale.linear(),
             yScale: d3.scale.linear(),
-            highlighted: 12, // off
+            highlighted: -1, // off
         }
 
         extend(__, config);
@@ -39,12 +41,23 @@
                 .attr("width", __.width)
                 .attr("height", __.height);
 
-            build();
+            cp.build();
 
             return cp;
         }
 
-        function build () {
+        cp.build = function() {
+
+            cp.svg.selectAll("*").remove();
+
+            cp.tableGroup = cp.svg.append("g")
+                .attr("class", "table-group");
+
+            cp.colorGroup = cp.svg.append("g")
+                .attr("class", "color-group");
+
+            cp.valueGroup = cp.svg.append("g")
+                .attr("class", "value-group");
 
             var xVals = [],
                 yVals = [];
@@ -68,104 +81,95 @@
             __.xScale.domain([0, d3.max(xVals)]).range([__.margin.left, __.width - __.margin.right]);
             __.yScale.domain([0, d3.max(yVals)]).range([0, __.height / 4]);
 
-            if (!__.collapsed) {
+            __.data.forEach(function (g, k) {
 
-                __.data.forEach(function (g, k) {
+                var g = cp.svg.append("g")
+                    .attr("class", "data-group");
 
-                    var g = cp.svg.append("g")
-                        .attr("class", "data-group");
+                values = box(__.data[k]);
 
-                    values = box(__.data[k]);
+                cp.boxData.push(values);
 
-                    cp.boxData.push(values);
+                if (__.collapsed) return;
 
-                    for (var j = 0; j < values.length; j++) {
+                for (var j = 0; j < values.length; j++) {
 
-                        if (__.ignore.includes(j)) continue;
+                    if (__.ignore.includes(j)) continue;
 
-                        var x = __.xScale(j / __.width) - (width / 2),
-                            y = __.yScale(values[j].q[0]),
-                            w = width,
-                            h = __.yScale(values[j].q[2]) - __.yScale(values[j].q[0]),
-                            o = values[j].q[2] - values[j].q[0]
+                    var x = __.xScale(j / __.width) - (width / 2),
+                        y = __.yScale(values[j].q[0]),
+                        w = width,
+                        h = __.yScale(values[j].q[2]) - __.yScale(values[j].q[0]),
+                        o = values[j].q[2] - values[j].q[0]
 
-                        y = k === 1
-                            ? __.height / 2 + y
-                            : __.height / 2 - y - h;
+                    y = k === 1
+                        ? __.height / 2 + y
+                        : __.height / 2 - y - h;
 
-                        g.append("rect")
-                            .attr("x", x)
-                            .attr("y", y)
-                            .attr("width", w)
-                            .attr("height", h)
-                            .attr("opacity", 0.5 - o)
-                            .attr("fill", function (d, i) {
-                                return __.color(d, k);
-                            })
+                    g.append("rect")
+                        .attr("x", x)
+                        .attr("y", y)
+                        .attr("width", w)
+                        .attr("height", h)
+                        .attr("opacity", 0.5 - o)
+                        .attr("fill", function (d, i) {
+                            return __.color(d, k);
+                        })
 
-                        var x = __.xScale(j / __.width) - (width / 2),
-                            y = __.yScale(values[j].w[0]),
-                            w = width,
-                            h = __.yScale(values[j].w[1]) - __.yScale(values[j].w[0]);
+                    var x = __.xScale(j / __.width) - (width / 2),
+                        y = __.yScale(values[j].w[0]),
+                        w = width,
+                        h = __.yScale(values[j].w[1]) - __.yScale(values[j].w[0]);
 
-                        if (k == 1) {
-                            y = __.height / 2 + y;
-                        }
-                        else {
-                            y = __.height / 2 - y - h;
-                        }
-
-                        g.append("rect")
-                            .attr("x", x)
-                            .attr("y", y)
-                            .attr("width", w)
-                            .attr("height", h)
-                            .attr("opacity", 0.2)
-                            .attr("fill", function (d, i) {
-                                return __.color(d, k);
-                            })
-
-                        var x = __.xScale(j / __.width) - (width / 2),
-                            y = __.yScale(values[j].q[1]),
-                            w = width,
-                            h = 1;
-
-                        if (k == 1) {
-                            y = __.height / 2 + y;
-                        }
-                        else {
-                            y = __.height / 2 - y - h;
-                        }
-
-                        g.append("rect")
-                            .attr("class", "value-rect")
-                            .attr("x", x)
-                            .attr("y", y)
-                            .attr("width", w)
-                            .attr("height", h)
-                            .attr("opacity", 0.7)
-                            .attr("fill", "Black")
-                            .attr("stroke-opacity", "0.2");
+                    if (k == 1) {
+                        y = __.height / 2 + y;
                     }
-                });
+                    else {
+                        y = __.height / 2 - y - h;
+                    }
 
-                buildLegend();
-                buildTable();
-            }
+                    g.append("rect")
+                        .attr("x", x)
+                        .attr("y", y)
+                        .attr("width", w)
+                        .attr("height", h)
+                        .attr("opacity", 0.2)
+                        .attr("fill", function (d, i) {
+                            return __.color(d, k);
+                        })
+
+                    var x = __.xScale(j / __.width) - (width / 2),
+                        y = __.yScale(values[j].q[1]),
+                        w = width,
+                        h = 1;
+
+                    if (k == 1) {
+                        y = __.height / 2 + y;
+                    }
+                    else {
+                        y = __.height / 2 - y - h;
+                    }
+
+                    g.append("rect")
+                        .attr("class", "value-rect")
+                        .attr("x", x)
+                        .attr("y", y)
+                        .attr("width", w)
+                        .attr("height", h)
+                        .attr("opacity", 0.7)
+                        .attr("fill", "Black")
+                        .attr("stroke-opacity", "0.2");
+                }
+            });
+
+            if (!__.collapsed) buildLegend();
+
+            buildTable();
 
             return cp;
         }
 
         function buildTable() {
-
-            cp.tableGroup = cp.svg.append("g")
-                .attr("class", "table-group");
-
-            cp.colorGroup = cp.svg.append("g")
-                .attr("class", "color-group");
-
-            cp.valueGroup = cp.svg.append("g")
-                .attr("class", "value-group");
 
             var width = __.width / __.data[0].length;
 
@@ -207,20 +211,17 @@
                     .attr("stroke-opacity", 0.5)
                     .attr("fill", "None");
 
-                
-                if (!(__.ignore.includes(i))) {
-
-                    cp.colorGroup.append("rect")
-                        .attr("x", x)
-                        .attr("y", y)
-                        .attr("width", w)
-                        .attr("height", h)
-                        .attr("opacity", 0) // on for show
-                        .attr("stroke", "None")
-                        .attr("stroke-opacity", 0.5)
-                        .attr("fill", color);
-                }
-                
+                cp.colorGroup.append("rect")
+                    .attr("class", "color-rect")
+                    .attr("x", x)
+                    .attr("y", y)
+                    .attr("width", w)
+                    .attr("height", h)
+                    .attr("opacity", (__.collapsed ? 0.8 : 0.2))
+                    .attr("stroke", "None")
+                    .attr("stroke-opacity", 0.5)
+                    .attr("fill", color);
+              
                 buildHighlighted();
             }
         }
@@ -242,6 +243,8 @@
                     });
                 }
             }
+
+            if (__.collapsed) return;
 
             var values = [cp.boxData[0][__.highlighted], cp.boxData[1][__.highlighted]];
 
@@ -339,17 +342,36 @@
             return cp;
         }
 
+        cp.margin = function (obj) {
+            if (!arguments.length) return __.margin;
+            __.margin = obj;
+            return cp;
+        }
+
         cp.title = function (title) {
+            if (!arguments.length) return __.title;
+            __.title = title;
 
             cp.titleGroup = cp.svg.append("g")
                 .attr("class", "title-group");
 
-            cp.titleGroup.append("text")
-                .attr("x", __.margin.left + 3)
-                .attr("y", __.margin.top)
-                .text(title)
-                .style("font-weight", "bold")
-                .style("font-size", 10 + "px");
+            if (!__.collapsed) {
+
+                cp.titleGroup.append("text")
+                    .attr("x", __.margin.left + 3)
+                    .attr("y", __.margin.top)
+                    .text(title)
+                    .style("font-weight", "bold")
+                    .style("font-size", 10 + "px");
+            }
+            else {
+
+                cp.titleGroup.append("text")
+                    .attr("x", __.margin.left + 3)
+                    .attr("y", 8)
+                    .text(title)
+                    .style("font-size", 8 + "px");
+            }
 
             return cp;
         }
@@ -357,6 +379,12 @@
         cp.highlighted = function (val) {
             __.highlighted = val;
             buildHighlighted();
+            return cp;
+        }
+
+        cp.collapsed = function (bool) {
+            if (!arguments.length) return __.collapsed;
+            __.collapsed = bool;
             return cp;
         }
 
@@ -371,7 +399,7 @@
         }
 
         cp.onClick = function (func) {
-            cp.svg[0][0].addEventListener("click", func);
+            cp.svg[0][0].addEventListener("click", (func).bind(cp));
             return cp;
         }
 

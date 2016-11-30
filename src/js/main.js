@@ -1,6 +1,4 @@
 ﻿/// <reference path="lib/d3.selector.js" />
-/// <reference path="lib/d3.selector.js" />
-/// <reference path="lib/d3.selector.js" />
 /// <reference path="lib/cdr.min.js" />
 /// <reference path="lib/three-dxf.js" />
 /// <reference path="lib/d3.v3.min.js" />
@@ -28,7 +26,8 @@
     var legendOptions = ['Scheme1', "Scheme2"];
     var colorScale = function (d, i) { return ["#cc0000", "#006699"][i] }
 
-    var comparisonComparators = [];
+    var comparisonComparators = [],
+        evaluationComparators = [];
 
     var svg = d3.select(helper)
         .append("svg")
@@ -40,11 +39,17 @@
         .y(function (d) { return d.y; })
         .interpolate('linear');
 
+    var shiftDown = false,
+        cntrlDown = false;
+
     d3.csv("doc/occupationdata1.csv", function (d1) {
 
         d3.csv("doc/occupationdata2.csv", function (d2) {
 
-            readFile("doc/spatialstructure.dxf", function (dxf) {
+            cdr.core.file.readFile("doc/spatialstructure.dxf", function (o) {
+
+                var parser = new window.DxfParser();
+                var dxf = parser.parseSync(o);
 
                 model = new Model();
                 model.setDataNodes(buildDataNodes(d1, d2));
@@ -62,6 +67,7 @@
         buildScene(model);
         buildSceneSettings(model);
         buildSlider(model);
+        buildKeyEvents(model);
     }
 
     function buildEvalsFrames(model) {
@@ -129,7 +135,7 @@
 
         var settingsFilterTypes = Object.keys(model.getDataNodeLocationTypes());
         var settingsFilterTypesCheckBox = document.getElementById("evals-settings-filter-types-checkbox");
-        var settingsFilterTypesCheckbox =  buildCheckbox(settingsFilterTypes, "_locationType", settingsFilterTypesCheckBox);
+        var settingsFilterTypesCheckBoxes =  buildCheckbox(settingsFilterTypes, "_locationType", settingsFilterTypesCheckBox);
 
         var namesMapped = model.getDataNodeNames();
 
@@ -169,6 +175,107 @@
         return model;
     }
 
+    function buildSceneSettings(model) {
+
+        var settingsButton = document.getElementById("scene-settings"),
+            settingsBox = document.getElementById("scene-settings-box");
+
+        var settingsButtonRect = settingsButton.getBoundingClientRect();
+
+        var settingsTextToggleItem = document.getElementById("text-toggle-info"),
+            settingsTextToggleCheckBox = document.getElementById("text-toggle-input");
+
+        var dataNodes = model.getDataNodes();
+
+        settingsBox.style.left = settingsButtonRect.right - settingsBox.clientWidth + "px";
+        settingsBox.style.top = settingsButtonRect.bottom + "px";
+        settingsButton.addEventListener("click", function (e) {
+            settingsBox.classList.toggle("hidden");
+        });
+
+        settingsTextToggleItem.addEventListener("click", function (e) {
+
+            settingsTextToggleCheckBox.checked = !settingsTextToggleCheckBox.checked
+            cdr.core.event.eventFire(settingsTextToggleCheckBox, "change", true);
+            e.stopPropagation();
+        });
+
+        settingsTextToggleCheckBox.addEventListener("click", function (e) {
+            e.stopPropagation();
+        });
+
+        settingsTextToggleCheckBox.addEventListener("change", function (e) {
+
+            for (var i = 0; i < dataNodes.length; i++) {
+
+                var tag = dataNodes[i].getAttribute("tag")
+
+                tag.classList.toggle("hidden");
+            }
+            e.stopPropagation();
+        });
+
+        return model;
+    }
+
+    function buildCheckbox(types, property, domElement) {
+
+        var clones = [];
+
+        domElement.addEventListener("click", function (e) {
+            e.stopPropagation();
+        })
+
+        for (var i = 0; i < types.length; i++) {
+
+            var template = document.querySelector("#filter-types-checkbox-template");
+            var clone = document.importNode(template.content, true);
+
+            var settingsSubItem = clone.querySelector("#filter-types-checkbox-item-"),
+                settingsSubItemInput = clone.querySelector("#filter-types-checkbox-input-"),
+                settingsSubItemInfo = clone.querySelector("#filter-types-checkbox-info-");
+
+            settingsSubItem.id += types[i];
+            settingsSubItemInput.id += types[i];
+            settingsSubItemInfo.id += types[i];
+
+            settingsSubItemInfo.innerHTML = types[i];
+
+            settingsSubItemInfo.addEventListener("click", (function (locationType, e) {
+
+                var item = document.getElementById("filter-types-checkbox-input-" + locationType);
+
+                item.checked = !item.checked
+                cdr.core.event.eventFire(item, "change", true);
+
+                e.stopPropagation();
+
+            }).bind(this, types[i]));
+
+            settingsSubItemInput.addEventListener("change", (function (locationType, e) {
+
+                var dataNodes = model.getDataNodes(),
+                    bool = e.srcElement.checked;
+
+                for (var j = 0; j < dataNodes.length; j++) {
+
+                    if (dataNodes[j][property] === locationType) {
+
+                        toggleActive(dataNodes[j], bool);
+                    }
+                }
+
+                e.stopPropagation();
+
+            }).bind(this, types[i]));
+
+            clones.push(clone);
+            domElement.appendChild(clone);
+        }
+
+        return clones;
+    }
+
     function buildEvaluations(model, domElement) {
 
         domElement.innerHTML = "";
@@ -183,8 +290,26 @@
         dataNodes.forEach(function (dataNode) {
 
             var data = dataNode.findData(),
-                dataFormatted = formatToComparator(data);
+                dataFormatted = [];
                 id = cdr.core.string.generateUUID();
+
+                for (var scheme in data) {
+
+                    dataFormatted[scheme] = [];
+
+                    for (var key in data[scheme]) {
+
+                        if (cdr.core.time.isTime(key)) {
+
+                            var dd = cdr.core.time.timeToDecimalDay(key);
+
+                            dataFormatted[scheme].push({
+                                x: dd,
+                                y: Number(data[scheme][key])
+                            });
+                        }
+                    }
+                }
 
                 var points = [
                     { mid: dataFormatted[0], dir: 1},
@@ -197,7 +322,7 @@
             node.datum(points).call(comparator);
 
             comparator
-                .title(getName(dataNode, !comparator.isCollapsed()))
+                .title(dataNode.getName())
                 .id(id)
                 .setHighlightedValue(+slider.value)
                 .onClick(function () {
@@ -209,8 +334,10 @@
                     comparator
                         .height(height)
                         .rebuild(!comparator.isCollapsed())
-                        .title(getName(dataNode, !comparator.isCollapsed()));
+                        .title(dataNode.getName());
                 });
+
+            evaluationComparators.push(comparator);
 
             dataNode.setAttribute("colors", comparator.getColors());
             dataNode.setAttribute("id", id);
@@ -222,11 +349,9 @@
 
     function buildComparisons(model, domElement) {
 
-        var data = formatToAnalysis(model),
+        var data = model.getDataFormatted(),
             dataNodeLocationTypeValues = {},
-            height = 200,
-            width = document.getElementById("evals-box").clientWidth * 0.95;
-        
+            width = document.getElementById("evals-box").clientWidth * 0.95;   
 
         for (var type in data) {
 
@@ -247,16 +372,32 @@
 
             var node = d3.select(typeDiv);
             var comparator = d3.comparatorBox({
-                height: height,
+                height: 10,
                 width: width,
+                margin: { top: 0, right: 5, bottom: 0, left: 5 },
                 color: colorScale,
                 ignore: [0]
-            });
+            }).collapsed(true);
 
             node.datum(dataFormatted)
                 .call(comparator)
 
-            comparator.title(type + " Occupancy Data Range");
+            comparator
+                .title(type + " Occupancy Data Range")
+                .highlighted(+slider.value)
+                .onClick(function () {
+
+                    this
+                        .collapsed(!this.collapsed())
+                        .margin((this.collapsed()
+                            ? { top: 0, right: 5, bottom: 0, left: 5 }
+                            : { top: 10, right: 5, bottom: 5, left: 5 }))
+                        .height((this.collapsed() ? 10 : 400))
+                        .highlighted(+slider.value)
+                        .build()
+                        .title(this.title())
+               
+                });
 
             comparisonComparators.push(comparator);
         }
@@ -362,20 +503,6 @@
         var selector = d3.selector(),
             sceneSelector = document.getElementById("scene-selector");
 
-        document.addEventListener("keydown", function (e) {
-            
-            if (e.key === "Shift") {
-                sceneSelector.classList.add("selecting");
-            }
-        })
-
-        document.addEventListener("keyup", function (e) {
-
-            if (e.key === "Shift") {
-                sceneSelector.classList.remove("selecting");
-            }
-        })
-
         d3.select(sceneSelector).call(selector);
 
         selector.on("mouseup", function (down, up) {
@@ -464,49 +591,6 @@
         return model;
     }
 
-    function buildSceneSettings(model) {
-
-        var settingsButton = document.getElementById("scene-settings"),
-            settingsBox = document.getElementById("scene-settings-box");
-
-        var settingsButtonRect = settingsButton.getBoundingClientRect();
-
-        var settingsTextToggleItem = document.getElementById("text-toggle-info"),
-            settingsTextToggleCheckBox = document.getElementById("text-toggle-input");
-
-        var dataNodes = model.getDataNodes();
-
-        settingsBox.style.left = settingsButtonRect.right - settingsBox.clientWidth + "px";
-        settingsBox.style.top = settingsButtonRect.bottom + "px";
-        settingsButton.addEventListener("click", function (e) {
-            settingsBox.classList.toggle("hidden");
-        });
-
-        settingsTextToggleItem.addEventListener("click", function (e) {
-
-            settingsTextToggleCheckBox.checked = !settingsTextToggleCheckBox.checked
-            eventFire(settingsTextToggleCheckBox, "change", true);
-            e.stopPropagation();
-        });
-
-        settingsTextToggleCheckBox.addEventListener("click", function (e) {
-            e.stopPropagation();
-        });
-
-        settingsTextToggleCheckBox.addEventListener("change", function (e) {
-
-            for (var i = 0; i < dataNodes.length; i++) {
-
-                var tag = dataNodes[i].getAttribute("tag")
-
-                tag.classList.toggle("hidden");
-            }
-            e.stopPropagation();
-        });
-
-        return model;
-    }
-
     function buildSlider(model) {
         
         var dataNodes = model.getDataNodes();
@@ -539,6 +623,56 @@
 
         return model;
     }
+
+    function buildKeyEvents(model) {
+
+        var sceneSelector = document.getElementById("scene-selector"),
+            settingsTextToggleItem = document.getElementById("text-toggle-info");
+
+        document.addEventListener("keydown", function (e) {
+            
+            switch (e.key) {
+
+                case "Shift":
+                    sceneSelector.classList.add("selecting");
+                    shiftDown = true;
+                    break;
+
+                case "Control":
+                    cntrlDown = true;
+                    break;
+
+                case "i":
+                    if (cntrlDown) {
+                        cdr.core.event.eventFire(settingsTextToggleItem, "click", false);
+                    }
+
+                default: break;
+            }
+        })
+
+        document.addEventListener("keyup", function (e) {
+
+            switch (e.key) {
+
+                case "Shift":
+                    sceneSelector.classList.remove("selecting");
+                    shiftDown = false;
+                    break;
+
+                case "Control":
+                    cntrlDown = false;
+                    break;
+
+                default: break;
+            }
+        })
+    }
+
+    ///
+    /// dataNode helpers
+    /// ------------------------------------------------
+    ///
 
     function buildPoint(dataNode) {
 
@@ -574,117 +708,18 @@
         var point = new THREE.Points(pointGeom, pointMat);
 
         return point;
-    }
 
-    function buildCheckbox(types, property, domElement) {
-
-        var clones = [];
-
-        domElement.addEventListener("click", function (e) {
-            e.stopPropagation();
-        })
-
-        for (var i = 0; i < types.length; i++) {
-
-            var template = document.querySelector("#filter-types-checkbox-template");
-            var clone = document.importNode(template.content, true);
-
-            var settingsSubItem = clone.querySelector("#filter-types-checkbox-item-"),
-                settingsSubItemInput = clone.querySelector("#filter-types-checkbox-input-"),
-                settingsSubItemInfo = clone.querySelector("#filter-types-checkbox-info-");
-
-            settingsSubItem.id += types[i];
-            settingsSubItemInput.id += types[i];
-            settingsSubItemInfo.id += types[i];
-
-            settingsSubItemInfo.innerHTML = types[i];
-
-            settingsSubItemInfo.addEventListener("click", (function (locationType, e) {
-
-                var item = document.getElementById("filter-types-checkbox-input-" + locationType);
-
-                item.checked = !item.checked
-                eventFire(item, "change", true);
-
-                e.stopPropagation();
-
-            }).bind(this, types[i]));
-
-            settingsSubItemInput.addEventListener("change", (function (locationType, e) {
-
-                var dataNodes = model.getDataNodes(),
-                    bool = e.srcElement.checked;
-
-                for (var j = 0; j < dataNodes.length; j++) {
-
-                    if (dataNodes[j][property] === locationType) {
-
-                        toggleActive(dataNodes[j], bool);
-                    }
-                }
-
-                e.stopPropagation();
-
-            }).bind(this, types[i]));
-
-            clones.push(clone);
-            domElement.appendChild(clone);
+        function convert(vec) {
+            return new THREE.Vector3(vec.y, -vec.x, vec.z);
         }
-
-        return clones;
-    }
-
-    function buildLegend(domElement, w,h) {
-
-        var svg = d3.select(domElement)
-            .selectAll('svg')
-            .append('svg')
-            .attr("width", w + 500)
-            .attr("height", h)
-
-        var text = svg.append("text")
-            .attr("class", "title")
-            .attr('transform', 'translate(' + 0 + ',0)')
-            .attr("x", w - 70)
-            .attr("y", 10)
-            .attr("font-size", "12px")
-            .attr("font-weight", "bold")
-            .attr("fill", "#404040")
-            .text("Total Mean Density Comparison");
-
-        var legend = svg.append("g")
-            .attr("class", "legend")
-            .attr("height", 100)
-            .attr("width", 200)
-            .attr('transform', 'translate(' + 0 + ',20)');
-
-        legend.selectAll('rect')
-            .data(legendOptions)
-            .enter()
-            .append("rect")
-            .attr("x", w - 65)
-            .attr("y", function (d, i) { return i * 20; })
-            .attr("width", 10)
-            .attr("height", 10)
-            .style("fill", colorScale);
-
-        legend.selectAll('text')
-            .data(legendOptions)
-            .enter()
-            .append("text")
-            .attr("x", w - 52)
-            .attr("y", function (d, i) { return i * 20 + 9; })
-            .attr("font-size", "11px")
-            .attr("fill", "#737373")
-            .text(function (d) { return d; });
     }
 
     function buildTag(dataNode) {
 
         var tag = document.createElement("div");
-        tag.id = getName(dataNode);
+        tag.id = dataNode.getName();
         tag.classList.add("tag");
-        tag.innerText = getName(dataNode);
+        tag.innerText = dataNode.getName();
 
         var data = dataNode.findData();
 
@@ -719,13 +754,13 @@
 
         tag.addEventListener("click", function () {
 
-            eventFire(evals, "click");
+            cdr.core.event.eventFire(evals, "click");
 
             info.classList.remove("collapsed");
             comparatorDomElement.scrollIntoView();
 
             if (comparator.isCollapsed()) {
-                eventFire(comparatorDomElement, "click");
+                cdr.core.event.eventFire(comparatorDomElement, "click");
             }
 
             drawCornerLines(tag, comparatorDomElement);
@@ -792,132 +827,6 @@
         return tag;
     }
 
-    function getName(dataNode, bool) {
-
-        return dataNode.getName();
-    }
-
-    function convert(vec) {
-
-        return new THREE.Vector3(vec.y, -vec.x, vec.z);
-    }
-
-    ///
-    /// formatting methods
-    /// --------------------------------------------
-    ///
-
-    function formatToAnalysis(model) {
-
-        var dataTypes = model.getDataNodeNames();
-        var __ = {};
-
-        for (var type in dataTypes) {
-
-            if (dataTypes[type].length > 1) {
-
-                var schemes = {};
-
-                for (var i = 0; i < dataTypes[type].length; i++) {
-
-                    var dataNode = dataTypes[type][i],
-                        data = dataNode.findData();
-
-                    for (var scheme in data) {
-
-                        if (!(scheme in schemes)) {
-
-                            schemes[scheme] = [];
-                        }
-
-                        schemes[scheme].push(data[scheme]);
-                    }
-                }
-
-                for (var scheme in schemes) {
-
-                    var attributes = {};
-
-                    for (var i = 0; i < schemes[scheme].length; i++) {
-
-                        var dimension = +schemes[scheme][i]["Dimension"];
-
-                        for (var attribute in schemes[scheme][i]) {
-
-                            if (cdr.core.time.isTime(attribute)) {
-
-                                if (!(attribute in attributes)) {
-
-                                    attributes[attribute] = [];
-                                }
-
-                                attributes[attribute].push(+schemes[scheme][i][attribute] / dimension);
-                            }
-                        }
-                    }
-
-                    schemes[scheme] = attributes;
-                }
-
-                __[type] = schemes;
-            }
-        }
-
-        return __;
-    }
-
-    function formatToComparator(obj) {
-
-        var __ = {};
-
-        for (var scheme in obj) {
-
-            __[scheme] = [];
-
-            for (var key in obj[scheme]) {
-
-                if (cdr.core.time.isTime(key)) {
-
-                    var dd = cdr.core.time.timeToDecimalDay(key);
-
-                    __[scheme].push({
-                        x: dd,
-                        y: Number(obj[scheme][key])
-                    });
-                }
-            }
-        }
-
-        return __;
-    }
-
-    function formatToRadarChart(obj) {
-
-        var __ = [];
-
-        for (var scheme in obj) {
-
-            var lst = [];
-
-            for (var key in obj[scheme]) {
-
-                lst.push({
-                    axis: key,
-                    value: obj[scheme][value]
-                })
-            }
-
-            __.push(lst);
-        }
-
-        return __;
-    }
-
-    ///
-    /// helper mathods
-    /// --------------------------------------------
-    ///
-
     function toggleActive(dataNode, bool) {
 
         dataNode.isActive = bool;
@@ -940,112 +849,6 @@
         }
 
         return dataNode;
-    }
-
-    // http://stackoverflow.com/questions/2705583/how-to-simulate-a-click-with-javascript
-    function eventFire(el, etype, stop) {
-        if (el.fireEvent) {
-            el.fireEvent('on' + etype);
-        } else {
-            var evObj = document.createEvent('Events');
-            evObj.initEvent(etype, true, false);
-            el.dispatchEvent(evObj);
-            if (stop) evObj.stopPropagation();
-        }
-    }
-
-    function mode(arr) {
-
-        var __ = {},
-            mode = arr[0];
-
-        arr.forEach(function (i) {
-
-            if (!(i in __)) { __[i] = 0; }
-            __[i]++;
-
-        });
-
-        for (var i in __) {
-            if (__[i] > __[mode]) { mode = i; }
-        }
-
-        return mode;
-    }
-
-    function readFile(file, cb) {
-
-        function readTextFile(file, cb) {
-            var rawFile = new XMLHttpRequest();
-            rawFile.responseType = "blob"
-            rawFile.open("GET", file, true);
-            rawFile.onreadystatechange = function () {
-
-                if (rawFile.readyState === 4) {
-                    if (rawFile.status === 200 || rawFile.status == 0) {
-
-                        var response = rawFile.response;
-
-                        cb(response);
-                    }
-                }
-            }
-            rawFile.send(null);
-        }
-
-        var reader = new FileReader();
-
-        reader.onprogress = updateProgress;
-        reader.onabort = abortUpload;
-        reader.onerror = errorHandler;
-
-        reader.onloadend = function (evt) {
-            cb(onSuccess(evt));
-        };
-
-        readTextFile(file, function (data) {
-            reader.readAsText(data);
-        });
-    }
-
-    function abortUpload() {
-        console.log('Aborted read!')
-    }
-
-    function errorHandler(evt) {
-        switch (evt.target.error.code) {
-            case evt.target.error.NOT_FOUND_ERR:
-                alert('File Not Found!');
-                break;
-            case evt.target.error.NOT_READABLE_ERR:
-                alert('File is not readable');
-                break;
-            case evt.target.error.ABORT_ERR:
-                break; // noop
-            default:
-                alert('An error occurred reading this file.');
-        }
-    }
-
-    function updateProgress(evt) {
-        console.log('progress');
-        console.log(Math.round((evt.loaded / evt.total) * 100));
-    }
-
-    function onSuccess(evt) {
-        var fileReader = evt.target;
-        if (fileReader.error) return console.log("error onloadend!?");
-
-        var parser = new window.DxfParser();
-        var dxf = parser.parseSync(fileReader.result);
-
-        return dxf;
-    }
-
-    function handleDragOver(evt) {
-        evt.stopPropagation();
-        evt.preventDefault();
-        evt.dataTransfer.dropEffect = 'copy';
     }
 
 })()
