@@ -7,7 +7,7 @@
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <link rel="stylesheet" href="css/style.css">
 </head>
-<body>
+<body oncontextmenu="return false;">
     <div id="helper">
     </div>
     <div id="container-box">
@@ -23,7 +23,7 @@
                     <div id="scene-settings-box" class="settings-box hidden">
                         <div id="scene-settings-text-toggle" class="settings-item">
                             <input id="text-toggle-input" class="checkbox-input" type="checkbox" checked/>
-                            <div id="text-toggle-info" class="checkbox-info">SHOW TAGS (Ctrl-t)</div>
+                            <div id="text-toggle-info" class="checkbox-info">SHOW TAGS (Ctrl-i)</div>
                         </div>
                     </div>
                 </div>
@@ -31,6 +31,12 @@
             <div id="scene-selector"></div>
             <div id="scene-tags"></div>
             <div id="scene-frame"></div>
+            <div id="scene-controls">
+                <div class="controls">CONTROLS:</div>
+                <div class="controls">Toggle Tags: Ctrl + i</div>
+                <div class="controls">Select Multiple Nodes: Shift + Mouse Left</div>
+                <div class="controls">Clear Selection: Escape</div>
+            </div>
         </div>
         <div id="evals-box" class="float-right color-default">
             <div id="evals-bar" class="title-bar">
@@ -73,8 +79,7 @@
     <script src="js/lib/jquery.min.js"></script>
 
     <script src="js/lib/d3.v3.min.js"></script>
-    <script src="js/lib/d3.comparatorBox.js"></script>
-    <script src="js/lib/d3.comparatorPline.js"></script>
+    <script src="js/lib/d3.comparator.js"></script>
     <script src="js/lib/d3.selector.js"></script>
     <script src="js/lib/d3.radarChart.js"></script>
 

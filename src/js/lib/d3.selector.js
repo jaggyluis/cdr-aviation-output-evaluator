@@ -110,11 +110,11 @@ d3.selector = function (config) {
 
         sl.svg.on(e, function () {
 
-            cb(sl.down, sl.up);
+            cb(sl.up);
             func();
         })
 
-        return cb;
+        return sl;
     }
 
     return sl;

@@ -1,15 +1,17 @@
 ﻿(function () {
 
-    d3.comparatorBox = function (config) {
+    d3.comparator = function (config) {
 
         var __ = {
             data: [],
             width: null,
             height: null,
             color: null,
+            colors: [],
             collapsed: false,
             title: null,
             ignore: [],
+            id: null,
             margin: { top: 10, right: 5, bottom: 5, left: 5 },
             xScale: d3.scale.linear(),
             yScale: d3.scale.linear(),
@@ -40,6 +42,10 @@
                 .attr("class", "comparator-svg")
                 .attr("width", __.width)
                 .attr("height", __.height);
+
+            if (__.id) {
+                cp.svg.attr("id", __.id);
+            }
 
             cp.build();
 
@@ -86,7 +92,8 @@
                 var g = cp.svg.append("g")
                     .attr("class", "data-group");
 
-                values = box(__.data[k]);
+                var points = [];
+                var values = box(__.data[k]);
 
                 cp.boxData.push(values);
 
@@ -150,6 +157,7 @@
                         y = __.height / 2 - y - h;
                     }
 
+                    /*
                     g.append("rect")
                         .attr("class", "value-rect")
                         .attr("x", x)
@@ -159,7 +167,35 @@
                         .attr("opacity", 0.7)
                         .attr("fill", "Black")
                         .attr("stroke-opacity", "0.2");
+                    */
+
+                    points.push({
+                        x: x + width / 2,
+                        y: y
+                    })
                 }
+
+                g.append("path")
+                    .attr("d", lineFunc(points.map(function (point) {
+
+                        g.append("circle")
+                            .attr("class", "data-point")
+                            .attr("r", 1)
+                            .attr("cx", point.x)
+                            .attr("cy", point.y)
+                            .attr("fill", function (d, i) {
+                                return __.color(d, k);
+                            })
+                            .attr("stroke", "None")
+
+                        return point;
+                    })))
+                    .attr("stroke-width", "1px")
+                    .attr("fill", "None")
+                    .attr("stroke", function (d, i) {
+                        return __.color(d, k);
+                    })
+
             });
 
             if (!__.collapsed) buildLegend();
@@ -206,9 +242,9 @@
                     .attr("y", y)
                     .attr("width", w)
                     .attr("height", h)
-                    .attr("opacity", 0.5)
+                    .attr("opacity", (__.collapsed ? 0.8 : 0.5))
                     .attr("stroke", "None")
-                    .attr("stroke-opacity", 0.5)
+                    .attr("stroke-opacity", (__.collapsed ? 0.8 : 0.5))
                     .attr("fill", "None");
 
                 cp.colorGroup.append("rect")
@@ -222,6 +258,8 @@
                     .attr("stroke-opacity", 0.5)
                     .attr("fill", color);
               
+                __.colors.push(color);
+
                 buildHighlighted();
             }
         }
@@ -376,9 +414,19 @@
             return cp;
         }
 
+        cp.colors = function () {
+            return __.colors;
+        }
+
         cp.highlighted = function (val) {
             __.highlighted = val;
             buildHighlighted();
+            return cp;
+        }
+
+        cp.id = function (id) {
+            if (!arguments.length) return __.id;
+            __.id = id;
             return cp;
         }
 

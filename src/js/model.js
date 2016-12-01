@@ -1,5 +1,4 @@
-﻿/// <reference path="lib/aviation.min.js" />
-
+﻿
 // helper functions ---
 function buildDataNodes() {
 
@@ -64,6 +63,9 @@ function DataNode(point2d, name, locationType) {
     this._attributes = {};
 
     this.isActive = true;
+    this.isSelected = true;
+
+    this.wasActive = true;
 }
 DataNode.prototype = {
 
@@ -200,6 +202,8 @@ function Model() {
                     var dataNode = dataTypes[type][i],
                         data = dataNode.findData();
 
+                    if (!dataNode.isActive) continue;
+
                     for (var scheme in data) {
 
                         if (!(scheme in schemes)) {
@@ -236,7 +240,10 @@ function Model() {
                     schemes[scheme] = attributes;
                 }
 
-                __[type] = schemes;
+                if (Object.keys(schemes).length > 0) {
+
+                    __[type] = schemes;
+                }              
             }
         }
 

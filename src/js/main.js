@@ -1,9 +1,10 @@
-﻿/// <reference path="lib/d3.selector.js" />
+﻿/// <reference path="model.js" />
+/// <reference path="lib/d3.selector.js" />
 /// <reference path="lib/cdr.min.js" />
 /// <reference path="lib/three-dxf.js" />
 /// <reference path="lib/d3.v3.min.js" />
-/// <reference path="model.js" />
 /// <reference path="lib/three.js" />
+/// <reference path="lib/d3.comparator.js" />
 
 (function () {
 
@@ -15,19 +16,26 @@
         intersects,
         mouse,
         frustum,
-        projScreenMatrix;
-        
+        projScreenMatrix;    
 
     var helper = document.getElementById("helper"),
         slider = document.getElementById("evals-slider-input"),
         time = document.getElementById("evals-time"),
         tags = document.getElementById("scene-tags");
 
+    var evaluationsFrame = document.getElementById("evaluations-frame"),
+        evaluationsToggle = document.getElementById("evals-title-evaluations"),
+        evaluationsComparators = [];
+
+    var comparisonsFrame = document.getElementById("comparisons-frame"),
+        comparisonsToggle = document.getElementById("evals-title-comparisons"),
+        comparisonsComparators = [];
+
+    var summaryFrame = document.getElementById("summary-frame"),
+        summaryToggle = document.getElementById("evals-title-summary");
+
     var legendOptions = ['Scheme1', "Scheme2"];
     var colorScale = function (d, i) { return ["#cc0000", "#006699"][i] }
-
-    var comparisonComparators = [],
-        evaluationComparators = [];
 
     var svg = d3.select(helper)
         .append("svg")
@@ -71,15 +79,6 @@
     }
 
     function buildEvalsFrames(model) {
-
-        var evaluationsFrame = document.getElementById("evaluations-frame"),
-            evaluationsToggle = document.getElementById("evals-title-evaluations");
-
-        var comparisonsFrame = document.getElementById("comparisons-frame"),
-            comparisonsToggle = document.getElementById("evals-title-comparisons");
-
-        var summaryFrame = document.getElementById("summary-frame"),
-            summaryToggle = document.getElementById("evals-title-summary");
 
         buildEvaluations(model, evaluationsFrame);
         buildComparisons(model, comparisonsFrame);
@@ -158,6 +157,8 @@
                 match = new RegExp(this.value.toLowerCase());
 
             for (var j = 0; j < dataNodes.length; j++) {
+
+                if (!dataNodes[j].isSelected) continue;
 
                 var prop = dataNodes[j][property].toLowerCase();
 
@@ -261,6 +262,8 @@
 
                     if (dataNodes[j][property] === locationType) {
 
+                        if (!dataNodes[j].isSelected && bool === true) continue;
+
                         toggleActive(dataNodes[j], bool);
                     }
                 }
@@ -282,7 +285,6 @@
 
         var width = width = document.getElementById("evals-box").clientWidth * 0.95;
         var node = d3.select(domElement),
-            collapsed = true,
             dataNodes = model.getDataNodes().filter(function (dataNode) {
                 return dataNode.isActive;
             });
@@ -290,56 +292,54 @@
         dataNodes.forEach(function (dataNode) {
 
             var data = dataNode.findData(),
-                dataFormatted = [];
+                dataFormatted = [],
                 id = cdr.core.string.generateUUID();
 
-                for (var scheme in data) {
+            for (var scheme in data) {
 
-                    dataFormatted[scheme] = [];
+                var s = [];
 
-                    for (var key in data[scheme]) {
+                for (var key in data[scheme]) {
 
-                        if (cdr.core.time.isTime(key)) {
+                    if (cdr.core.time.isTime(key)) {
 
-                            var dd = cdr.core.time.timeToDecimalDay(key);
-
-                            dataFormatted[scheme].push({
-                                x: dd,
-                                y: Number(data[scheme][key])
-                            });
-                        }
+                        s.push([data[scheme][key] / data[scheme]["Dimension"]]);
                     }
                 }
 
-                var points = [
-                    { mid: dataFormatted[0], dir: 1},
-                    { mid: dataFormatted[1], dir: -1}
-                ]
+                dataFormatted.push(s);                
+            }
 
-            var height = collapsed ? 10 : 100;
-            var comparator = d3.comparatorPline({ height: height, width: width}).collapsed(collapsed);
+            var comparator = d3.comparator({
+                    height: 10,
+                    width: width,
+                    margin: { top: 0, right: 5, bottom: 0, left: 5 },
+                    color: colorScale,
+                    ignore: []
+                })
+                .collapsed(true)
+                .id(id);
 
-            node.datum(points).call(comparator);
+            node.datum(dataFormatted).call(comparator);
 
             comparator
                 .title(dataNode.getName())
-                .id(id)
-                .setHighlightedValue(+slider.value)
+                .highlighted(+slider.value)
                 .onClick(function () {
 
-                    var height = comparator.isCollapsed()
-                        ? 100
-                        : 10;
-
-                    comparator
-                        .height(height)
-                        .rebuild(!comparator.isCollapsed())
-                        .title(dataNode.getName());
+                    this
+                        .collapsed(!this.collapsed())
+                        .margin((this.collapsed()
+                            ? { top: 0, right: 5, bottom: 0, left: 5 }
+                            : { top: 10, right: 5, bottom: 5, left: 5 }))
+                        .height((this.collapsed() ? 10 : 100))
+                        .highlighted(+slider.value)
+                        .build()
+                        .title(this.title())
                 });
 
-            evaluationComparators.push(comparator);
-
-            dataNode.setAttribute("colors", comparator.getColors());
+            evaluationsComparators.push(comparator);
+            dataNode.setAttribute("colors", comparator.colors());
             dataNode.setAttribute("id", id);
             dataNode.setAttribute("comparator", comparator);
         });
@@ -348,6 +348,8 @@
     }
 
     function buildComparisons(model, domElement) {
+
+        domElement.innerHTML = "";
 
         var data = model.getDataFormatted(),
             dataNodeLocationTypeValues = {},
@@ -366,24 +368,24 @@
             for (var scheme in data[type]) {
 
                 dataFormatted.push(Object.keys(data[type][scheme]).map(function (k) {
+
                     return data[type][scheme][k];
-                }))
+                }));
             }
 
             var node = d3.select(typeDiv);
-            var comparator = d3.comparatorBox({
+            var comparator = d3.comparator({
                 height: 10,
                 width: width,
                 margin: { top: 0, right: 5, bottom: 0, left: 5 },
                 color: colorScale,
-                ignore: [0]
+                ignore: []
             }).collapsed(true);
 
-            node.datum(dataFormatted)
-                .call(comparator)
+            node.datum(dataFormatted).call(comparator)
 
             comparator
-                .title(type + " Occupancy Data Range")
+                .title(type)
                 .highlighted(+slider.value)
                 .onClick(function () {
 
@@ -399,7 +401,7 @@
                
                 });
 
-            comparisonComparators.push(comparator);
+            comparisonsComparators.push(comparator);
         }
 
         model.setDataNodeLocationTypeValues(dataNodeLocationTypeValues);
@@ -460,14 +462,17 @@
     function buildScene(model) {
 
         var node = document.getElementById("scene-frame"),
-            width = node.clientWidth,
-            height = node.clientHeight;
+            sceneRect = node.getBoundingClientRect();
+            sceneWidth = node.clientWidth,
+            sceneHeight = node.clientHeight;
+
+            console.log(sceneRect);
 
         var dataNodes = model.getDataNodes().filter(function (dataNode) {
             return dataNode.isActive;
         });;
        
-        var viewer = new ThreeDxf.Viewer(model.getDXFData(), node, width, height);
+        var viewer = new ThreeDxf.Viewer(model.getDXFData(), node, sceneWidth, sceneHeight);
 
         scene = viewer.scene;
         renderer = viewer.renderer;
@@ -505,9 +510,29 @@
 
         d3.select(sceneSelector).call(selector);
 
-        selector.on("mouseup", function (down, up) {
+        selector.on("mouseup", function (sel) {
 
-            console.log(down, up);
+            if (sel.select === false) return;
+
+            model.getDataNodes().forEach(function (dataNode) {
+                
+                var rect = dataNode.getAttribute("tag").getBoundingClientRect();
+
+                if (rect.top - sceneRect.top >= sel.y &&
+                    rect.bottom - sceneRect.top <= sel.y + sel.height &&
+                    rect.left - sceneRect.left >= sel.x &&
+                    rect.right - sceneRect.left <= sel.x + sel.width) {
+
+                    toggleActive(dataNode, true);
+                    toggleSelected(dataNode, true);
+                }
+                else {
+                    toggleActive(dataNode, false);
+                    toggleSelected(dataNode, false);
+                }
+            })
+
+            buildComparisons(model, comparisonsFrame);
         })
 
         animate();
@@ -605,13 +630,13 @@
                     point = dataNodes[i].getAttribute("point"),
                     color = dataNodes[i].getAttribute("colors")[value];
 
-                comparator.setHighlightedValue(value);
+                comparator.highlighted(value);
                 point.material.color.set(color);
             }
 
-            for (var i = 0; i < comparisonComparators.length; i++) {
+            for (var i = 0; i < comparisonsComparators.length; i++) {
 
-                var comparator = comparisonComparators[i];
+                var comparator = comparisonsComparators[i];
                 comparator.highlighted(value)
             }
         })
@@ -630,7 +655,7 @@
             settingsTextToggleItem = document.getElementById("text-toggle-info");
 
         document.addEventListener("keydown", function (e) {
-            
+
             switch (e.key) {
 
                 case "Shift":
@@ -642,6 +667,15 @@
                     cntrlDown = true;
                     break;
 
+                case "Escape":
+                    model.getDataNodes().forEach(function (dataNode) {
+
+                        toggleActive(dataNode, true);
+                        toggleSelected(dataNode, true);
+                    })
+                    buildComparisons(model, comparisonsFrame);
+                    break;
+
                 case "i":
                     if (cntrlDown) {
                         cdr.core.event.eventFire(settingsTextToggleItem, "click", false);
@@ -649,7 +683,7 @@
 
                 default: break;
             }
-        })
+        });
 
         document.addEventListener("keyup", function (e) {
 
@@ -666,7 +700,7 @@
 
                 default: break;
             }
-        })
+        });
     }
 
     ///
@@ -759,7 +793,7 @@
             info.classList.remove("collapsed");
             comparatorDomElement.scrollIntoView();
 
-            if (comparator.isCollapsed()) {
+            if (comparator.collapsed()) {
                 cdr.core.event.eventFire(comparatorDomElement, "click");
             }
 
@@ -829,6 +863,7 @@
 
     function toggleActive(dataNode, bool) {
 
+        dataNode.wasActive = dataNode.isActive;
         dataNode.isActive = bool;
         dataNode.getAttribute("point").visible = bool;
 
@@ -847,6 +882,13 @@
                 .div[0][0]
                 .classList.add("collapsed");
         }
+
+        return dataNode;
+    }
+
+    function toggleSelected(dataNode, bool) {
+
+        dataNode.isSelected = bool;
 
         return dataNode;
     }
