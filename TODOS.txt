@@ -6,14 +6,19 @@ X implement CTRL+i for quick toggles
 
 X implement loose scheme numbering for potential multiple scheme comparisons
 - implement double ival range for looking at the summary for specific times  of day;
-- implement linked checkboxes that turn off/on when the type is toggled
+X implement linked checkboxes that turn off/on when the type is toggled
 X implement rectangle quick selection from the viewer
 X implement updated comparisons on selection
-- implement updated summary on selection
+X implement updated summary on selection
 
 X implement comparisons view
 X implement comparator on evaluations view
-- implement summary view
+X implement summary view
+- implement summarator permanent types from checkboxes
+- implement summarator min/max and qantiles
+- implement selection box
+- implement summarator number visualizations
+- implement summarator normalize scale toggle
 - implement navigation view/ file uploads
 X implement helper box
 
@@ -22,4 +27,5 @@ X fix settings box hidden
 X fix bad right click
 X fix filter/ selection relationship
 X fix bad selection box
+X fix invalid ids
 - fix comparator to show eval at top

@@ -80,6 +80,7 @@
     height:99%;
     position: absolute;
     pointer-events: none;
+    z-index: 4;
 }
 
 /*

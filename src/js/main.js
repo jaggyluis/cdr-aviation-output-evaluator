@@ -1,4 +1,5 @@
-﻿/// <reference path="model.js" />
+﻿/// <reference path="lib/d3.summarator.js" />
+/// <reference path="model.js" />
 /// <reference path="lib/d3.selector.js" />
 /// <reference path="lib/cdr.min.js" />
 /// <reference path="lib/three-dxf.js" />
@@ -19,9 +20,19 @@
         projScreenMatrix;    
 
     var helper = document.getElementById("helper"),
-        slider = document.getElementById("evals-slider-input"),
+        helperRect = helper.getBoundingClientRect();
+
+    var slider = document.getElementById("evals-slider-input"),
         time = document.getElementById("evals-time"),
         tags = document.getElementById("scene-tags");
+
+    var sceneBox = document.getElementById("scene-box"),
+        sceneFrame = document.getElementById("scene-frame"),
+        sceneRect = sceneFrame.getBoundingClientRect(),
+        sceneSelector = document.getElementById("scene-selector");
+
+    var evalsBox = document.getElementById("evals-box"),
+        evalsRect = evalsBox.getBoundingClientRect();
 
     var evaluationsFrame = document.getElementById("evaluations-frame"),
         evaluationsToggle = document.getElementById("evals-title-evaluations"),
@@ -82,7 +93,7 @@
 
         buildEvaluations(model, evaluationsFrame);
         buildComparisons(model, comparisonsFrame);
-        //buildSummary(model, summaryFrame);
+        buildSummary(model, summaryFrame);
 
         evaluationsToggle.addEventListener("click", function () {
 
@@ -121,9 +132,8 @@
     function buildEvalsSettings(model) {
 
         var settingsButton = document.getElementById("evals-settings"),
+            settingsButtonRect = settingsButton.getBoundingClientRect(),
             settingsBox = document.getElementById("evals-settings-box");
-
-        var settingsButtonRect = settingsButton.getBoundingClientRect();
 
         settingsBox.style.left = settingsButtonRect.right - settingsBox.clientWidth + "px";
         settingsBox.style.top = settingsButtonRect.bottom + "px";
@@ -179,20 +189,20 @@
     function buildSceneSettings(model) {
 
         var settingsButton = document.getElementById("scene-settings"),
+            settingsButtonRect = settingsButton.getBoundingClientRect(),
             settingsBox = document.getElementById("scene-settings-box");
 
-        var settingsButtonRect = settingsButton.getBoundingClientRect();
+        settingsBox.style.left = settingsButtonRect.right - settingsBox.clientWidth + "px";
+        settingsBox.style.top = settingsButtonRect.bottom + "px";
+
+        settingsButton.addEventListener("click", function (e) {
+            settingsBox.classList.toggle("hidden");
+        });
 
         var settingsTextToggleItem = document.getElementById("text-toggle-info"),
             settingsTextToggleCheckBox = document.getElementById("text-toggle-input");
 
         var dataNodes = model.getDataNodes();
-
-        settingsBox.style.left = settingsButtonRect.right - settingsBox.clientWidth + "px";
-        settingsBox.style.top = settingsButtonRect.bottom + "px";
-        settingsButton.addEventListener("click", function (e) {
-            settingsBox.classList.toggle("hidden");
-        });
 
         settingsTextToggleItem.addEventListener("click", function (e) {
 
@@ -221,7 +231,8 @@
 
     function buildCheckbox(types, property, domElement) {
 
-        var clones = [];
+        var clones = [],
+            dataNodes = model.getDataNodes();
 
         domElement.addEventListener("click", function (e) {
             e.stopPropagation();
@@ -242,6 +253,18 @@
 
             settingsSubItemInfo.innerHTML = types[i];
 
+            for (var j = 0; j < dataNodes.length; j++) {
+
+                if (dataNodes[j][property] === types[i]) {
+
+                    if (dataNodes[j].getAttribute("input") === null) {
+                        dataNodes[j].setAttribute("input", []);
+                    }
+
+                    dataNodes[j].getAttribute("input").push(settingsSubItemInput);
+                }
+            }
+
             settingsSubItemInfo.addEventListener("click", (function (locationType, e) {
 
                 var item = document.getElementById("filter-types-checkbox-input-" + locationType);
@@ -255,19 +278,19 @@
 
             settingsSubItemInput.addEventListener("change", (function (locationType, e) {
 
-                var dataNodes = model.getDataNodes(),
-                    bool = e.srcElement.checked;
+                var bool = e.srcElement.checked;
 
                 for (var j = 0; j < dataNodes.length; j++) {
 
-                    if (dataNodes[j][property] === locationType) {
-
-                        if (!dataNodes[j].isSelected && bool === true) continue;
+                    if (dataNodes[j].getAttribute("input").includes(e.srcElement)) {
 
                         toggleActive(dataNodes[j], bool);
                     }
                 }
 
+                buildComparisons(model, comparisonsFrame);
+                buildSummary(model, summaryFrame);
+               
                 e.stopPropagation();
 
             }).bind(this, types[i]));
@@ -283,7 +306,7 @@
 
         domElement.innerHTML = "";
 
-        var width = width = document.getElementById("evals-box").clientWidth * 0.95;
+        var width = evalsBox.clientWidth * 0.95;
         var node = d3.select(domElement),
             dataNodes = model.getDataNodes().filter(function (dataNode) {
                 return dataNode.isActive;
@@ -353,7 +376,7 @@
 
         var data = model.getDataFormatted(),
             dataNodeLocationTypeValues = {},
-            width = document.getElementById("evals-box").clientWidth * 0.95;   
+            width = evalsBox.clientWidth * 0.95;   
 
         for (var type in data) {
 
@@ -402,6 +425,16 @@
                 });
 
             comparisonsComparators.push(comparator);
+
+            dataNodeLocationTypeValues[type] = dataFormatted.map(function (scheme) {
+
+                return scheme.reduce(function (arr, vals) {
+
+                    return arr.concat(vals);
+
+                }, []);
+
+            });
         }
 
         model.setDataNodeLocationTypeValues(dataNodeLocationTypeValues);
@@ -411,87 +444,61 @@
 
     function buildSummary(model, domElement) {
 
+        domElement.innerHTML = "";
+
         var data = model.getDataNodeLocationTypeValues(),
-            width = document.getElementById("evals-box").clientWidth * .75,
-            height = width,
-            typeValues = [[],[]],
-            attr = "mid";
+            width = evalsBox.clientWidth,
+            height = width;
 
         var summaryDiv = document.createElement("div");
         summaryDiv.classList.add("summary-box");
 
         domElement.appendChild(summaryDiv);
 
-        var config = {
-            w: width,
-            h: height,
-            maxValue: 0,
-            levels: 5,
-            ExtraWidthX: 200,
-            color: colorScale, 
-        }
+        var node = d3.select(summaryDiv);
+        var summarator = d3.summarator({
+            height: height,
+            width: width,
+            color: colorScale,
+            max: 0.4
+        });
 
-        for (var type in data) {
-
-            var index = 0
-
-            for (var scheme in data[type]) {
-
-                var values = Object.keys(data[type][scheme][attr]).map(function (d) {
-
-                    return data[type][scheme][attr][d];
-                });
-
-                var value = d3.mean(values);
-
-                typeValues[index].push({
-                    axis: type,
-                    value: value
-                });
-
-                index++;
-            }
-        }
-
-        RadarChart.draw(summaryDiv, typeValues, config);
-        buildLegend(summaryDiv, 100, 100);
+        node.datum(data).call(summarator);
 
         return model;
     }
 
     function buildScene(model) {
-
-        var node = document.getElementById("scene-frame"),
-            sceneRect = node.getBoundingClientRect();
-            sceneWidth = node.clientWidth,
-            sceneHeight = node.clientHeight;
-
-            console.log(sceneRect);
-
-        var dataNodes = model.getDataNodes().filter(function (dataNode) {
-            return dataNode.isActive;
-        });;
        
-        var viewer = new ThreeDxf.Viewer(model.getDXFData(), node, sceneWidth, sceneHeight);
+        var viewer = new ThreeDxf.Viewer(
+            model.getDXFData(),
+            sceneFrame,
+            sceneFrame.clientWidth,
+            sceneFrame.clientHeight);
 
         scene = viewer.scene;
         renderer = viewer.renderer;
-        camera = viewer.camera;
-        controls = viewer.controls;
-
-        controls.enableRotate = false;
-        controls.update();
 
         mouse = new THREE.Vector2();
         frustum = new THREE.Frustum();
         projScreenMatrix = new THREE.Matrix4();
 
+        controls = viewer.controls;
+        controls.enableRotate = false;
+        controls.update();
+        controls.addEventListener('change', onCameraChange);
+
+        camera = viewer.camera;
         camera.zoom = 0.004;
         camera.updateProjectionMatrix();
-
-        controls.addEventListener('change', onCameraChange);    
+                   
         window.addEventListener('resize', onWindowResize, false);
+        document.addEventListener('mousemove', onDocumentMouseMove, false);
 
+        var selector = d3.selector(),
+            dataNodes = model.getDataNodes().filter(function (dataNode) {
+            return dataNode.isActive;
+        });
         dataNodes.forEach(function (dataNode, i) {
 
             var point = buildPoint(dataNode);
@@ -503,11 +510,6 @@
             dataNode.setAttribute("point", point);
         });
 
-        document.addEventListener('mousemove', onDocumentMouseMove, false);
-
-        var selector = d3.selector(),
-            sceneSelector = document.getElementById("scene-selector");
-
         d3.select(sceneSelector).call(selector);
 
         selector.on("mouseup", function (sel) {
@@ -515,7 +517,7 @@
             if (sel.select === false) return;
 
             model.getDataNodes().forEach(function (dataNode) {
-                
+
                 var rect = dataNode.getAttribute("tag").getBoundingClientRect();
 
                 if (rect.top - sceneRect.top >= sel.y &&
@@ -530,10 +532,11 @@
                     toggleActive(dataNode, false);
                     toggleSelected(dataNode, false);
                 }
-            })
+            });
 
             buildComparisons(model, comparisonsFrame);
-        })
+            buildSummary(model, summaryFrame);
+        });
 
         animate();
         onWindowResize();
@@ -542,7 +545,7 @@
         function onWindowResize() {
             camera.aspect = window.innerWidth / window.innerHeight;
             camera.updateProjectionMatrix();
-            renderer.setSize(node.clientWidth, node.clientHeight);
+            renderer.setSize(sceneFrame.clientWidth, sceneFrame.clientHeight);
         }
 
         function onCameraChange() {
@@ -651,8 +654,7 @@
 
     function buildKeyEvents(model) {
 
-        var sceneSelector = document.getElementById("scene-selector"),
-            settingsTextToggleItem = document.getElementById("text-toggle-info");
+        var settingsTextToggleItem = document.getElementById("text-toggle-info");
 
         document.addEventListener("keydown", function (e) {
 
@@ -674,6 +676,7 @@
                         toggleSelected(dataNode, true);
                     })
                     buildComparisons(model, comparisonsFrame);
+                    buildSummary(model, summaryFrame);
                     break;
 
                 case "i":
@@ -803,7 +806,6 @@
         tag.addEventListener("mouseleave", function () {
 
             info.classList.add("collapsed");
-
             svg.selectAll("*").remove();
         });
 
@@ -814,29 +816,24 @@
             var fromRect = fromElement.getBoundingClientRect(),
                 toRect = toElement.getBoundingClientRect();
 
-            ///
-            /// TODO - this is bad - calculate
-            ///
-            var offset = 8;
-
             var p1 = {
-                y: fromRect.top - offset,
-                x: fromRect.left - offset
+                y: fromRect.top - helperRect.top,
+                x: fromRect.left - helperRect.left
             }
 
             var p2 = {
-                y: toRect.top - offset,
-                x: toRect.left - offset
+                y: toRect.top - helperRect.top,
+                x: toRect.left - helperRect.left
             }
 
             var p3 = {
-                y: fromRect.bottom - offset,
-                x: fromRect.right - offset
+                y: fromRect.bottom - helperRect.top,
+                x: fromRect.right - helperRect.left
             }
 
             var p4 = {
-                y: toRect.bottom - offset,
-                x: toRect.left - offset
+                y: toRect.bottom - helperRect.top,
+                x: toRect.left - helperRect.left
             }
 
             svg.selectAll("*").remove();
@@ -861,13 +858,17 @@
         return tag;
     }
 
-    function toggleActive(dataNode, bool) {
+    function toggleActive(dataNode, active) {
 
-        dataNode.wasActive = dataNode.isActive;
-        dataNode.isActive = bool;
-        dataNode.getAttribute("point").visible = bool;
+        var selected = dataNode.isSelected;
+        var checked = !dataNode.getAttribute("input").map(i => i.checked).includes(false);
 
-        if (bool) {
+        if ((active && !selected) || (active && !checked)) return dataNode;
+
+        dataNode.isActive = active;
+        dataNode.getAttribute("point").visible = active;
+
+        if (active) {
             dataNode.getAttribute("tag").classList.remove("collapsed");
             dataNode
                 .getAttribute("comparator")
