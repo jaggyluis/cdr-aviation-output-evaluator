@@ -22,7 +22,8 @@
     var helper = document.getElementById("helper"),
         helperRect = helper.getBoundingClientRect();
 
-    var slider = document.getElementById("evals-slider-input"),
+    var slider0 = document.getElementById("evals-slider-input-0"),
+        slider1 = document.getElementById("evals-slider-input-1")
         time = document.getElementById("evals-time"),
         tags = document.getElementById("scene-tags");
 
@@ -32,7 +33,8 @@
         sceneSelector = document.getElementById("scene-selector");
 
     var evalsBox = document.getElementById("evals-box"),
-        evalsRect = evalsBox.getBoundingClientRect();
+        evalsRect = evalsBox.getBoundingClientRect(),
+        evalsWidth = evalsBox.clientWidth;
 
     var evaluationsFrame = document.getElementById("evaluations-frame"),
         evaluationsToggle = document.getElementById("evals-title-evaluations"),
@@ -85,7 +87,7 @@
         buildEvalsSettings(model);
         buildScene(model);
         buildSceneSettings(model);
-        buildSlider(model);
+        buildsliders(model);
         buildKeyEvents(model);
     }
 
@@ -306,7 +308,7 @@
 
         domElement.innerHTML = "";
 
-        var width = evalsBox.clientWidth * 0.95;
+        var width = evalsWidth * 0.95;
         var node = d3.select(domElement),
             dataNodes = model.getDataNodes().filter(function (dataNode) {
                 return dataNode.isActive;
@@ -347,7 +349,7 @@
 
             comparator
                 .title(dataNode.getName())
-                .highlighted(+slider.value)
+                .highlighted(+slider0.value)
                 .onClick(function () {
 
                     this
@@ -356,7 +358,7 @@
                             ? { top: 0, right: 5, bottom: 0, left: 5 }
                             : { top: 10, right: 5, bottom: 5, left: 5 }))
                         .height((this.collapsed() ? 10 : 100))
-                        .highlighted(+slider.value)
+                        .highlighted(+slider0.value)
                         .build()
                         .title(this.title())
                 });
@@ -374,9 +376,9 @@
 
         domElement.innerHTML = "";
 
-        var data = model.getDataFormatted(),
+        var data = buildTypeData(model.getDataFormatted(), 0, -1),
             dataNodeLocationTypeValues = {},
-            width = evalsBox.clientWidth * 0.95;   
+            width = evalsWidth * 0.95;   
 
         for (var type in data) {
 
@@ -385,16 +387,6 @@
             typeDiv.classList.add("comparisons-box");
 
             domElement.appendChild(typeDiv);
-
-            var dataFormatted = [];
-
-            for (var scheme in data[type]) {
-
-                dataFormatted.push(Object.keys(data[type][scheme]).map(function (k) {
-
-                    return data[type][scheme][k];
-                }));
-            }
 
             var node = d3.select(typeDiv);
             var comparator = d3.comparator({
@@ -405,11 +397,11 @@
                 ignore: []
             }).collapsed(true);
 
-            node.datum(dataFormatted).call(comparator)
+            node.datum(data[type]).call(comparator)
 
             comparator
                 .title(type)
-                .highlighted(+slider.value)
+                .highlighted(+slider0.value)
                 .onClick(function () {
 
                     this
@@ -418,7 +410,7 @@
                             ? { top: 0, right: 5, bottom: 0, left: 5 }
                             : { top: 10, right: 5, bottom: 5, left: 5 }))
                         .height((this.collapsed() ? 10 : 400))
-                        .highlighted(+slider.value)
+                        .highlighted(+slider0.value)
                         .build()
                         .title(this.title())
                
@@ -426,18 +418,7 @@
 
             comparisonsComparators.push(comparator);
 
-            dataNodeLocationTypeValues[type] = dataFormatted.map(function (scheme) {
-
-                return scheme.reduce(function (arr, vals) {
-
-                    return arr.concat(vals);
-
-                }, []);
-
-            });
         }
-
-        model.setDataNodeLocationTypeValues(dataNodeLocationTypeValues);
 
         return model;
     }
@@ -446,9 +427,32 @@
 
         domElement.innerHTML = "";
 
-        var data = model.getDataNodeLocationTypeValues(),
-            width = evalsBox.clientWidth,
+        var min = Math.min(+slider0.value, +slider1.value),
+            max = Math.max(+slider0.value, +slider1.value);
+
+        var data = buildTypeData(model.getDataFormatted(), min, max),
+            width = evalsWidth,
             height = width;
+
+        for (var type in data) {
+            
+            var vals = [];
+
+            data[type].forEach(function (scheme) {
+
+                var n = [];
+
+                for (var i = 0; i < scheme.length; i++) {
+                    for (var j = 0; j < scheme[i].length; j++) {
+                        n.push(scheme[i][j]);
+                    }
+                }
+
+                vals.push(n);
+            });
+
+            data[type] = vals;
+        }
 
         var summaryDiv = document.createElement("div");
         summaryDiv.classList.add("summary-box");
@@ -460,7 +464,7 @@
             height: height,
             width: width,
             color: colorScale,
-            max: 0.4
+            //max: 0.4
         });
 
         node.datum(data).call(summarator);
@@ -619,34 +623,45 @@
         return model;
     }
 
-    function buildSlider(model) {
+    function buildsliders(model) {
         
-        var dataNodes = model.getDataNodes();
+        var dataNodes = model.getDataNodes(),
+            sliders = [slider0, slider1];
 
-        slider.addEventListener("change", function () {
+        sliders.forEach(function (slider) {
 
-            var value = +this.value;
+            slider.addEventListener("change", function () {
 
-            for (var i = 0; i < dataNodes.length; i++) {
+                var value = +this.value;
 
-                var comparator = dataNodes[i].getAttribute("comparator"),
-                    point = dataNodes[i].getAttribute("point"),
-                    color = dataNodes[i].getAttribute("colors")[value];
+                for (var i = 0; i < dataNodes.length; i++) {
 
-                comparator.highlighted(value);
-                point.material.color.set(color);
-            }
+                    var comparator = dataNodes[i].getAttribute("comparator"),
+                        point = dataNodes[i].getAttribute("point"),
+                        color = dataNodes[i].getAttribute("colors")[value];
 
-            for (var i = 0; i < comparisonsComparators.length; i++) {
+                    comparator.highlighted(value);
+                    point.material.color.set(color);
+                }
 
-                var comparator = comparisonsComparators[i];
-                comparator.highlighted(value)
-            }
-        })
+                for (var i = 0; i < comparisonsComparators.length; i++) {
 
-        slider.addEventListener("mousemove", function () {
+                    var comparator = comparisonsComparators[i];
+                    comparator.highlighted(value)
+                }
 
-            time.innerHTML = cdr.core.time.decimalDayToTime(+this.value / 24);
+                buildSummary(model, summaryFrame);
+            })
+
+            slider.addEventListener("mousemove", function () {
+
+                var min = Math.min(+slider0.value, +slider1.value);
+                    max = Math.max(+slider0.value, +slider1.value);
+
+                time.innerHTML = cdr.core.time.decimalDayToTime(min / 24) +
+                    " to " +
+                    cdr.core.time.decimalDayToTime(max / 24)
+            });
         });
 
         return model;
@@ -707,6 +722,36 @@
     }
 
     ///
+    /// model helpers
+    /// ------------------------------------------------
+    ///
+
+    function buildTypeData(data, start, end) {
+
+        var typeData = {};
+
+        for (var type in data) {
+
+            var dataFormatted = [];
+
+            for (var scheme in data[type]) {
+
+                dataFormatted.push(Object.keys(data[type][scheme]).map(function (k) {
+
+                    return data[type][scheme][k];
+                }));
+            }
+
+            typeData[type] = dataFormatted.map(function (scheme) {
+
+                return scheme.slice(start, end);
+            });
+        }
+
+        return typeData;
+    }
+
+    ///
     /// dataNode helpers
     /// ------------------------------------------------
     ///
@@ -737,7 +782,10 @@
             attr = types["Other"];
         }
 
-        attr.color = dataNode.getAttribute("colors")[+slider.value];
+        ///
+        /// make this the average of the mean
+        ///
+        attr.color = dataNode.getAttribute("colors")[+slider0.value];
 
         var pointGeom = new THREE.Geometry();
         pointGeom.vertices.push(convert(new THREE.Vector3(dataNode._pos.x, dataNode._pos.y, 0)));

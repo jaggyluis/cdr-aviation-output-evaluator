@@ -5,7 +5,7 @@ X implement the filter searchbar
 X implement CTRL+i for quick toggles
 
 X implement loose scheme numbering for potential multiple scheme comparisons
-- implement double ival range for looking at the summary for specific times  of day;
+X implement double ival range for looking at the summary for specific times  of day;
 X implement linked checkboxes that turn off/on when the type is toggled
 X implement rectangle quick selection from the viewer
 X implement updated comparisons on selection
@@ -13,13 +13,17 @@ X implement updated summary on selection
 
 X implement comparisons view
 X implement comparator on evaluations view
+- implement comparator double ival range
 X implement summary view
 - implement summarator permanent types from checkboxes
-- implement summarator min/max and qantiles
-- implement selection box
+X implement summarator min/max and quantiles
+X implement summarator linked to slider
+- implement summarator legend
 - implement summarator number visualizations
 - implement summarator normalize scale toggle
 - implement navigation view/ file uploads
+- implement filter update summary
+- implement selection box
 X implement helper box
 
 
@@ -28,4 +32,7 @@ X fix bad right click
 X fix filter/ selection relationship
 X fix bad selection box
 X fix invalid ids
-- fix comparator to show eval at top
+X fix comparator to show eval at top
+X fix comparator hover to bo more visible
+X fix summarator axis legends
+- fix bad ival range

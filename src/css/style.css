@@ -43,7 +43,7 @@
 }
 
 #scene-selector {
-    height: 100%;
+    height: 97%;
     position: absolute;
     width: 100%;
     overflow: hidden;
@@ -88,7 +88,7 @@
 */
 
 .frame {
-    max-height: 97%;
+    max-height: 90%;
     width: 100%;
     overflow-y: scroll;
     overflow-x: hidden;
@@ -133,26 +133,28 @@
 }
 
 .slider-bar {
-    height: 7%;
+    height: 10%;
     margin-top: 6px;
     overflow-y: scroll;
     overflow-x: hidden;
     margin-left: -5px;
+    //position: relative;
 }
 
 .slider-input {
     -webkit-appearance: none;
-    width: 100%;
+    width: 99%;
     height:1px;
     background-color: black;
     margin-top: 10px;
+    //position: absolute;
 }
 
 .slider-input::-webkit-slider-thumb {
     -webkit-appearance: none;
     border: 1px solid black;
     background-color: black;
-	width: 10px;
+	width: 4px;
 	height: 20px;
 	cursor: pointer;
 }
@@ -236,6 +238,11 @@
 
 .comparator-box {
     background-color: white;
+    margin-left: 1px;
+}
+.comparator-box:hover {
+    border-left: 1px solid black;
+    margin-left: 0px;
 }
 
 .comparator-svg:hover {
@@ -297,6 +304,7 @@
 
 .color-default {
 }
+
 
 
 

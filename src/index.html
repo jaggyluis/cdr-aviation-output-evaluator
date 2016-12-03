@@ -35,9 +35,10 @@
             <div id="scene-frame"></div>
             <div id="scene-controls">
                 <div class="controls">CONTROLS:</div>
-                <div class="controls">Toggle Tags: Ctrl + i</div>
-                <div class="controls">Select Multiple Nodes: Shift + Mouse Left</div>
-                <div class="controls">Clear Selection: Escape</div>
+                <div class="controls">Ctrl + i : Toggle Tags</div>
+                <div class="controls">Ctrl + n : Normalize Evaluations</div>
+                <div class="controls">Shift + m1 : Select Multiple Nodes</div>
+                <div class="controls">Esc: Clear Selected Nodes</div>
             </div>
         </div>
         <div id="evals-box" class="float-right color-default">
@@ -62,8 +63,9 @@
             <div id="comparisons-frame" class="frame collapsed"></div>
             <div id="summary-frame" class="frame collapsed"></div>
             <div id="evals-slider" class="slider-bar">
-                <input id="evals-slider-input" class="slider-input" type="range" min="0" value="12" max="23" step="1" list="evals-slider-settings"/>
-                <div id="evals-time">12:00:00</div>
+                <input id="evals-slider-input-0" class="slider-input" type="range" min="0" multiple value="5" max="23" step="1" list="evals-slider-settings"/>
+                <input id="evals-slider-input-1" class="slider-input" type="range" min="0" multiple value="22" max="23" step="1" list="evals-slider-settings" />
+                <div id="evals-time">05:00:00 to 23:00:00</div>
             </div>
         </div>
     </div>
@@ -84,7 +86,6 @@
     <script src="js/lib/d3.comparator.js"></script>
     <script src="js/lib/d3.summarator.js"></script>
     <script src="js/lib/d3.selector.js"></script>
-    <script src="js/lib/d3.radarChart.js"></script>
 
     <script src="js/lib/three.min.js"></script>
     <script src="js/lib/three.OrbitControls.js"></script>

@@ -62,6 +62,9 @@
             cp.colorGroup = cp.svg.append("g")
                 .attr("class", "color-group");
 
+            cp.highlightGroup = cp.svg.append("g")
+                .attr("class", "highlight-group");
+
             cp.valueGroup = cp.svg.append("g")
                 .attr("class", "value-group");
 
@@ -253,9 +256,20 @@
                     .attr("y", y)
                     .attr("width", w)
                     .attr("height", h)
-                    .attr("opacity", (__.collapsed ? 0.8 : 0.2))
+                    .attr("opacity", (__.collapsed ? 0.8 : 0.1))
                     .attr("stroke", "None")
                     .attr("stroke-opacity", 0.5)
+                    .attr("fill", color);
+
+                cp.highlightGroup.append("rect")
+                    .attr("class", "color-rect")
+                    .attr("x", x)
+                    .attr("y", y - __.margin.top)
+                    .attr("width", w)
+                    .attr("height", __.margin.top)
+                    .attr("opacity", 0.8)
+                    .attr("stroke", "None")
+                    .attr("stroke-opacity", 0.8)
                     .attr("fill", color);
               
                 __.colors.push(color);
@@ -271,6 +285,20 @@
             for (var i = 0; i < cp.tableGroup.length; i++) {
 
                 var group = cp.tableGroup[i][0],
+                    children = group.children;
+
+                for (var j = 0; j < children.length; j++) {
+
+                    d3.select(children[j]).attr("stroke", function () {
+
+                        return j === __.highlighted ? "black" : "None";
+                    });
+                }
+            }
+
+            for (var i = 0; i < cp.highlightGroup.length; i++) {
+
+                var group = cp.highlightGroup[i][0],
                     children = group.children;
 
                 for (var j = 0; j < children.length; j++) {
