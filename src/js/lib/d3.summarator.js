@@ -8,7 +8,7 @@
             width: 600,
             height: 600,
             factor: 0.6,
-            factorLegend: 0.75,
+            factorLegend: 0.8,
             levels: 3,
             max: 0,
             id: null,
@@ -70,9 +70,9 @@
 
             var area = d3.svg.area.radial()
                 .interpolate("linear-closed")
-                .angle(function (d) { return angle(d.x0); })
-                .innerRadius(function (d) { return radius(d.y0); })
-                .outerRadius(function (d) { return radius(d.y1); });
+                .angle(function (d) { return angle(d.xi); })
+                .innerRadius(function (d) { return radius(d.yi); })
+                .outerRadius(function (d) { return radius(d.yo); });
 
             var ln0 = [],
                 ln1 = [],
@@ -87,23 +87,53 @@
                 var max = d3.max([__.max, boxData[0].q[2], boxData[1].q[2]]);
                 var boxScale = d3.scale.linear().domain([0, max]).range([0, 1])
 
-                ln0.push(buildPoint(boxScale(boxData[0].q[1]), i));
-                ln1.push(buildPoint(boxScale(boxData[1].q[1]), i));
+                ln0.push(buildPoint(boxScale(boxData[0].q[1]), i, boxData[0].q[1]));
+                ln1.push(buildPoint(boxScale(boxData[1].q[1]), i, boxData[1].q[1]));
 
-                var p0i = buildPoint(boxScale(boxData[0].q[0]), i),
-                    p0o = buildPoint(boxScale(boxData[0].q[2]), i);
+                var p0i = buildPoint(boxScale(boxData[0].q[0]), i, boxData[0].q[0]),
+                    p0o = buildPoint(boxScale(boxData[0].q[2]), i, boxData[0].q[2]);
                  
                 a0.push(buildCombinPoint(p0i, p0o));
 
-                var p1i = buildPoint(boxScale(boxData[1].q[0]), i),
-                    p1o = buildPoint(boxScale(boxData[1].q[2]), i);
+                var p1i = buildPoint(boxScale(boxData[1].q[0]), i, boxData[1].q[0]),
+                    p1o = buildPoint(boxScale(boxData[1].q[2]), i, boxData[1].q[2]);
 
                 a1.push(buildCombinPoint(p1i, p1o));
 
             });
 
             dataGroup.append("path")
-                .attr("d", line(ln0))
+                .attr("d", function (d) {
+
+                    var ln = line(ln0),
+                        lns = ln.slice(1, -1).split("L");
+
+                    lns.forEach(function (coord, i) {
+
+                        var c = coord.split(","),
+                            cx = c[0],
+                            cy = c[1];
+
+                        dataGroup.append("text")
+                            .attr("class", "val")
+                            .text(function (e) {
+                                return "m : " + round(ln0[i].v, 3);
+                            })
+                            .style("font-family", "sans-serif")
+                            .style("font-size", "8px")
+                            .style("font-weight", "bold")
+                            .attr("text-anchor", "center")
+                            .attr("dy", "1.5em")
+                            .attr("fill", function (d, i) {
+                                return __.color(d, 0);
+                            })
+                            .attr("transform", function (d) {
+                                return "translate(" + cx + "," + cy + ")"
+                            });
+                    });
+
+                    return ln;
+                })
                 .attr("stroke-width", "2px")
                 .attr("fill", "None")
                 .attr("stroke", function (d, i) {
@@ -111,14 +141,44 @@
                 });
 
             dataGroup.append("path")
-                .attr("d", line(ln1))
+                .attr("d", function (d) {
+
+                    var ln = line(ln1),
+                        lns = ln.slice(1,-1).split("L");
+
+                    lns.forEach(function (coord, i) {
+
+                        var c = coord.split(","),
+                            cx = c[0],
+                            cy = c[1] - 20;
+
+                        dataGroup.append("text")
+                            .attr("class", "val")
+                            .text(function (e) {
+                                return "m : " + round(ln1[i].v, 3);
+                            })
+                            .style("font-family", "sans-serif")
+                            .style("font-size", "8px")
+                            .style("font-weight", "bold")
+                            .attr("text-anchor", "center")
+                            .attr("dy", "1.5em")
+                            .attr("fill", function (d, i) {
+                                return __.color(d, 1);
+                            })
+                            .attr("transform", function (d) {
+                                return "translate(" + cx + "," + cy + ")"
+                            });
+                    });
+
+                    return ln;
+                })
                 .attr("stroke-width", "2px")
                 .attr("fill", "None")
                 .attr("stroke", function (d, i) {
                     return __.color(d, 1);
                 });
             
-            dataGroup.selectAll("path.area2")
+            dataGroup.selectAll("path.area0")
                 .data([a0])
                 .enter().append("path")
                     .style("fill", function (d, i) {
@@ -126,7 +186,39 @@
                     })
                     .attr("class", "area")
                     .attr("fill-opacity", 0.1)
-                    .attr("d", area)
+                    .attr("d", function (d) {
+
+                        var ln = area(d),
+                            lns = ln.split("Z").slice(0,2);
+
+                        var maxLn = lns[0].slice(1).split("L"),
+                            minLn = lns[1].slice(1).split("L");
+
+                        maxLn.forEach(function (coord, i) {
+
+                            var c = coord.split(","),
+                                cx = c[0],
+                                cy = c[1];
+
+                            dataGroup.append("text")
+                                .attr("class", "val")
+                                .text(function (e) {
+                                    return "q3 : " + round(d[i].vo, 3);
+                                })
+                                .style("font-family", "sans-serif")
+                                .style("font-size", "8px")
+                                .attr("text-anchor", "center")
+                                .attr("dy", "1.5em")
+                                .attr("fill", function (d, i) {
+                                    return __.color(d, 0);
+                                })
+                                .attr("transform", function (d) {
+                                    return "translate(" + cx + "," + cy + ")"
+                                });
+                        });
+
+                        return ln;
+                    })
                     .attr("stroke", function (d, i) {
                         return __.color(d, 0);
                     })
@@ -140,7 +232,40 @@
                     })
                     .attr("class", "area")
                     .attr("fill-opacity", 0.1)
-                    .attr("d", area)
+                    .attr("d", function (d) {
+
+                        var ln = area(d),
+                            lns = ln.split("Z").slice(0, 2);
+
+                        var maxLn = lns[0].slice(1).split("L"),
+                            minLn = lns[1].slice(1).split("L");
+
+                        maxLn.forEach(function (coord, i) {
+
+                            var c = coord.split(","),
+                                cx = c[0],
+                                cy = c[1] - 20;
+
+                            dataGroup.append("text")
+                                .attr("class", "val")
+                                .text(function (e) {
+                                    return "q3 : " + round(d[i].vo, 3);
+                                })
+                                .style("font-family", "sans-serif")
+                                .style("font-size", "8px")
+                                .attr("text-anchor", "center")
+                                .attr("dy", "1.5em")
+                                .attr("fill", function (d, i) {
+                                    return __.color(d, 1);
+                                })
+                                .attr("transform", function (d) {
+                                    return "translate(" + cx + "," + cy + ")"
+                                });
+
+                        });
+
+                        return ln;
+                    })
                     .attr("stroke", function (d, i) {
                         return __.color(d, 1);
                     })
@@ -209,9 +334,9 @@
                             .attr("transform", function (d) {
 
                                 var split = pos.split('L');
-                                var coors = split[1].slice(0, -1)
+                                var coords = split[1].slice(0, -1);
 
-                                return "translate(" + coors + ")"
+                                return "translate(" + coords + ")"
                             })
 
                         return l;
@@ -225,48 +350,27 @@
 
             });
 
-            /*
-            axis.append("text")
-                .attr("class", "legend")
-                .text(function (d) { return d })
-                .style("font-family", "sans-serif")
-                .style("font-size", "11px")
-                .attr("text-anchor", "middle")
-                .attr("dy", "1.5em")
-                .attr("transform", function (d, i) { return "translate(0, -10)" })
-                .attr("x", function (d, i) {
-                    return __.width / 2 *
-                        (1 - __.factorLegend * Math.sin(i * __.radians / total)) -
-                        60 * Math.sin(i * __.radians / total);
-                })
-                .attr("y", function (d, i) {
-                    return __.height / 2 *
-                        (1 - Math.cos(i * __.radians / total)) -
-                        20 * Math.cos(i * __.radians / total);
-                });
-                */
-
             return sm;
         }
 
-        function buildPoint(value, index) {
+        function buildPoint(radius, angle, value) {
 
             return {
-                x: index,
-                y: value,
+                x: angle,
+                y: radius,
                 v: value
             };
         }
 
-        function buildCombinPoint(po, pi) {
+        function buildCombinPoint(pi, po) {
 
             return {
-                x0: pi.x,
-                x1: po.x,
-                y0: pi.y,
-                y1: po.y,
-                v0: pi.v,
-                v1: po.v
+                xi: pi.x,
+                xo: po.x,
+                yi: pi.y,
+                yo: po.y,
+                vi: pi.v,
+                vo: po.v
             };
         }
 

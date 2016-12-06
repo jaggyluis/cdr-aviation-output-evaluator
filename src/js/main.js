@@ -63,9 +63,18 @@
     var shiftDown = false,
         cntrlDown = false;
 
-    d3.csv("doc/occupationdata1.csv", function (d1) {
+    var MAXDENSITY = -1; // max density
 
-        d3.csv("doc/occupationdata2.csv", function (d2) {
+    var file0 = "doc/occupationdata1.csv",
+        file1 = "doc/occupationdata2.csv"
+
+    d3.csv(file0, function (d0) {
+
+        document.getElementById("legend0-color").style.backgroundColor = colorScale(null, 0);
+
+        d3.csv(file1, function (d1) {
+
+            document.getElementById("legend1-color").style.backgroundColor = colorScale(null, 1);
 
             cdr.core.file.readFile("doc/spatialstructure.dxf", function (o) {
 
@@ -73,7 +82,7 @@
                 var dxf = parser.parseSync(o);
 
                 model = new Model();
-                model.setDataNodes(buildDataNodes(d1, d2));
+                model.setDataNodes(buildDataNodes(d0, d1));
                 model.setDXFData(dxf);
 
                 init(model);            
@@ -183,6 +192,9 @@
                     toggleActive(dataNodes[j], false);
                 }
             }
+
+            buildComparisons(model, comparisonsFrame);
+            buildSummary(model, summaryFrame);
         });
 
         return model;
@@ -335,12 +347,18 @@
                 dataFormatted.push(s);                
             }
 
+            var vals = [+slider0.value, +slider1.value],
+                min = Math.min(vals[0], vals[1]),
+                max = Math.max(vals[0], vals[1]);
+
             var comparator = d3.comparator({
                     height: 10,
                     width: width,
                     margin: { top: 0, right: 5, bottom: 0, left: 5 },
                     color: colorScale,
-                    ignore: []
+                    ignore: [],
+                    //max: MAXDENSITY,
+                    highlighted: { start: min, end: max }
                 })
                 .collapsed(true)
                 .id(id);
@@ -349,8 +367,11 @@
 
             comparator
                 .title(dataNode.getName())
-                .highlighted(+slider0.value)
                 .onClick(function () {
+
+                    var vals = [+slider0.value, +slider1.value],
+                        min = Math.min(vals[0], vals[1]),
+                        max = Math.max(vals[0], vals[1]);
 
                     this
                         .collapsed(!this.collapsed())
@@ -358,7 +379,7 @@
                             ? { top: 0, right: 5, bottom: 0, left: 5 }
                             : { top: 10, right: 5, bottom: 5, left: 5 }))
                         .height((this.collapsed() ? 10 : 100))
-                        .highlighted(+slider0.value)
+                        .highlighted({ start: min, end: max })
                         .build()
                         .title(this.title())
                 });
@@ -377,8 +398,7 @@
         domElement.innerHTML = "";
 
         var data = buildTypeData(model.getDataFormatted(), 0, -1),
-            dataNodeLocationTypeValues = {},
-            width = evalsWidth * 0.95;   
+            width = evalsWidth * 0.95;
 
         for (var type in data) {
 
@@ -389,20 +409,31 @@
             domElement.appendChild(typeDiv);
 
             var node = d3.select(typeDiv);
+
+            var vals = [+slider0.value, +slider1.value],
+                min = Math.min(vals[0], vals[1]),
+                max = Math.max(vals[0], vals[1]);
+
             var comparator = d3.comparator({
                 height: 10,
                 width: width,
                 margin: { top: 0, right: 5, bottom: 0, left: 5 },
                 color: colorScale,
-                ignore: []
-            }).collapsed(true);
+                ignore: [],
+                //max: MAXDENSITY,
+                highlighted: { start: min, end: max }
+                })
+                .collapsed(true);
 
             node.datum(data[type]).call(comparator)
 
             comparator
                 .title(type)
-                .highlighted(+slider0.value)
                 .onClick(function () {
+
+                    var vals = [+slider0.value, +slider1.value],
+                        min = Math.min(vals[0], vals[1]),
+                        max = Math.max(vals[0], vals[1]);
 
                     this
                         .collapsed(!this.collapsed())
@@ -410,7 +441,7 @@
                             ? { top: 0, right: 5, bottom: 0, left: 5 }
                             : { top: 10, right: 5, bottom: 5, left: 5 }))
                         .height((this.collapsed() ? 10 : 400))
-                        .highlighted(+slider0.value)
+                        .highlighted({start: min, end: max})
                         .build()
                         .title(this.title())
                
@@ -464,7 +495,7 @@
             height: height,
             width: width,
             color: colorScale,
-            //max: 0.4
+            max: MAXDENSITY
         });
 
         node.datum(data).call(summarator);
@@ -632,22 +663,24 @@
 
             slider.addEventListener("change", function () {
 
-                var value = +this.value;
+                var vals = [+slider0.value, +slider1.value],
+                    min = Math.min(vals[0], vals[1]),
+                    max = Math.max(vals[0], vals[1]);
 
                 for (var i = 0; i < dataNodes.length; i++) {
 
                     var comparator = dataNodes[i].getAttribute("comparator"),
                         point = dataNodes[i].getAttribute("point"),
-                        color = dataNodes[i].getAttribute("colors")[value];
+                        color = dataNodes[i].getAttribute("colors")[min];
 
-                    comparator.highlighted(value);
+                    comparator.highlighted({ start: min, end: max });
                     point.material.color.set(color);
                 }
 
                 for (var i = 0; i < comparisonsComparators.length; i++) {
 
                     var comparator = comparisonsComparators[i];
-                    comparator.highlighted(value)
+                    comparator.highlighted({ start: min, end: max })
                 }
 
                 buildSummary(model, summaryFrame);
@@ -698,6 +731,17 @@
                     if (cntrlDown) {
                         cdr.core.event.eventFire(settingsTextToggleItem, "click", false);
                     }
+                    break;
+
+                case "x":
+                    if (cntrlDown) {
+                        MAXDENSITY = MAXDENSITY === 0.4 ? -1 : 0.4;
+                        //buildEvaluations(model, evaluationsFrame);
+                        //buildComparisons(model, comparisonsFrame);
+                        buildSummary(model, summaryFrame);
+                    }
+                    break;
+                 
 
                 default: break;
             }
@@ -744,7 +788,14 @@
 
             typeData[type] = dataFormatted.map(function (scheme) {
 
-                return scheme.slice(start, end);
+                if (end === undefined || end === -1) {
+                    
+                    return scheme.slice(start);
+                }
+                else {
+                    return scheme.slice(start, end + 1);
+                }
+                
             });
         }
 

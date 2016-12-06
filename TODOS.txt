@@ -13,19 +13,20 @@ X implement updated summary on selection
 
 X implement comparisons view
 X implement comparator on evaluations view
-- implement comparator double ival range
+X implement comparator double ival range
+/ implement comparator normalize scale toggle (SLOW)
+- implement comparator box chart instead of max line
 X implement summary view
-- implement summarator permanent types from checkboxes
+/ implement summarator permanent types from checkboxes
 X implement summarator min/max and quantiles
 X implement summarator linked to slider
-- implement summarator legend
-- implement summarator number visualizations
-- implement summarator normalize scale toggle
-- implement navigation view/ file uploads
-- implement filter update summary
+X implement summarator number visualizations
+X implement summarator normalize scale toggle
+X implement filter update summary
 - implement selection box
+X implement file uploader
+X implement legend
 X implement helper box
-
 
 X fix settings box hidden
 X fix bad right click
@@ -35,4 +36,6 @@ X fix invalid ids
 X fix comparator to show eval at top
 X fix comparator hover to bo more visible
 X fix summarator axis legends
-- fix bad ival range
+X fix bad ival range
+
+- refactor comparator rebuild for speed

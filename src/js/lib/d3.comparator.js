@@ -11,11 +11,12 @@
             collapsed: false,
             title: null,
             ignore: [],
+            max: -1,
             id: null,
             margin: { top: 10, right: 5, bottom: 5, left: 5 },
             xScale: d3.scale.linear(),
             yScale: d3.scale.linear(),
-            highlighted: -1, // off
+            highlighted: { start: 0, end: -1 }
         }
 
         extend(__, config);
@@ -56,17 +57,8 @@
 
             cp.svg.selectAll("*").remove();
 
-            cp.tableGroup = cp.svg.append("g")
-                .attr("class", "table-group");
-
             cp.colorGroup = cp.svg.append("g")
                 .attr("class", "color-group");
-
-            cp.highlightGroup = cp.svg.append("g")
-                .attr("class", "highlight-group");
-
-            cp.valueGroup = cp.svg.append("g")
-                .attr("class", "value-group");
 
             var xVals = [],
                 yVals = [];
@@ -87,10 +79,12 @@
                 });
             });
 
-            __.xScale.domain([0, d3.max(xVals)]).range([__.margin.left, __.width - __.margin.right]);
-            __.yScale.domain([0, d3.max(yVals)]).range([0, __.height / 4]);
+            var boxScale = box([yVals,[]])[0];
 
-            __.data.forEach(function (g, k) {
+            __.xScale.domain([0, d3.max(xVals)]).range([__.margin.left, __.width - __.margin.right]);
+            __.yScale.domain([0, d3.max([__.max, boxScale.w[1]])]).range([0, __.height / 4]);
+
+            __.data.forEach(function (scheme, k) {
 
                 var g = cp.svg.append("g")
                     .attr("class", "data-group");
@@ -160,18 +154,6 @@
                         y = __.height / 2 - y - h;
                     }
 
-                    /*
-                    g.append("rect")
-                        .attr("class", "value-rect")
-                        .attr("x", x)
-                        .attr("y", y)
-                        .attr("width", w)
-                        .attr("height", h)
-                        .attr("opacity", 0.7)
-                        .attr("fill", "Black")
-                        .attr("stroke-opacity", "0.2");
-                    */
-
                     points.push({
                         x: x + width / 2,
                         y: y
@@ -200,10 +182,17 @@
                     })
 
             });
+           
+            cp.highlightGroup = cp.svg.append("g")
+                .attr("class", "highlight-group");
+
+            cp.valueGroup = cp.svg.append("g")
+                .attr("class", "value-group");
+
+            buildHighlighted();
+            buildTable();
 
             if (!__.collapsed) buildLegend();
-
-            buildTable();
 
             return cp;
         }
@@ -240,16 +229,6 @@
                     color = colorScale1(-val);
                 }
 
-                cp.tableGroup.append("rect")
-                    .attr("x", x)
-                    .attr("y", y)
-                    .attr("width", w)
-                    .attr("height", h)
-                    .attr("opacity", (__.collapsed ? 0.8 : 0.5))
-                    .attr("stroke", "None")
-                    .attr("stroke-opacity", (__.collapsed ? 0.8 : 0.5))
-                    .attr("fill", "None");
-
                 cp.colorGroup.append("rect")
                     .attr("class", "color-rect")
                     .attr("x", x)
@@ -261,7 +240,7 @@
                     .attr("stroke-opacity", 0.5)
                     .attr("fill", color);
 
-                cp.highlightGroup.append("rect")
+                cp.colorGroup.append("rect")
                     .attr("class", "color-rect")
                     .attr("x", x)
                     .attr("y", y - __.margin.top)
@@ -273,56 +252,82 @@
                     .attr("fill", color);
               
                 __.colors.push(color);
-
-                buildHighlighted();
+           
             }
         }
 
         function buildHighlighted() {
 
+
+            cp.highlightGroup.selectAll("*").remove();
             cp.valueGroup.selectAll("*").remove();
 
-            for (var i = 0; i < cp.tableGroup.length; i++) {
+            var width = __.width / __.data[0].length,
+                o = 1;
 
-                var group = cp.tableGroup[i][0],
-                    children = group.children;
+            var x = 0,
+                y = __.yScale(0),
+                w = __.xScale(__.highlighted.start / __.width) - (width / 2),
+                h = __.height,
+                color;
 
-                for (var j = 0; j < children.length; j++) {
+            w = w < 0 ? 0 : w;
 
-                    d3.select(children[j]).attr("stroke", function () {
+            cp.highlightGroup.append("rect")
+                .attr("x", x)
+                .attr("y", y)
+                .attr("width", w)
+                .attr("height", h)
+                .attr("opacity", o)
+                .attr("stroke", "None")
+                .attr("fill", "#f2f2f2");
 
-                        return j === __.highlighted ? "black" : "None";
-                    });
-                }
-            }
+            var x = __.xScale(__.highlighted.end / __.width) + (width / 2),
+                y = __.yScale(0),
+                w = __.xScale(__.data[0].length / __.width) + (width / 2),
+                h = __.height,
+                color;
 
-            for (var i = 0; i < cp.highlightGroup.length; i++) {
+            w = w < 0 ? 0 : w;
 
-                var group = cp.highlightGroup[i][0],
-                    children = group.children;
-
-                for (var j = 0; j < children.length; j++) {
-
-                    d3.select(children[j]).attr("stroke", function () {
-
-                        return j === __.highlighted ? "black" : "None";
-                    });
-                }
-            }
+            cp.highlightGroup.append("rect")
+                .attr("x", x)
+                .attr("y", y)
+                .attr("width", w)
+                .attr("height", h)
+                .attr("opacity", o)
+                .attr("stroke", "None")
+                .attr("fill", "#f2f2f2");
 
             if (__.collapsed) return;
 
-            var values = [cp.boxData[0][__.highlighted], cp.boxData[1][__.highlighted]];
+            var values = cp.boxData.map(function (scheme) {
+
+                var max = { x: -1, y: -1 };
+
+                for (var i = __.highlighted.start; i < __.highlighted.end; i++) {
+                    
+                    if (scheme[i].q[1] > max.y) {
+                        max = {
+                            x: i / __.width,
+                            y: scheme[i].q[1]
+                        }
+                    }
+                }
+
+                return max;
+
+            });
 
             cp.valueGroup.append("path")
                  .attr("d", lineFunc([
                     {
                         x: __.margin.left,
-                        y: __.height / 2 + __.yScale(values[1].q[1])
+                        y: __.height / 2 + __.yScale(values[1].y)
                     },
                     {
-                        x: __.xScale(__.highlighted / __.width),
-                        y: __.height / 2 + __.yScale(values[1].q[1])
+                        x: __.xScale(values[1].x),
+                        y: __.height / 2 + __.yScale(values[1].y)
                     },
                  ]))
                 .attr("stroke", "black")
@@ -335,11 +340,11 @@
                  .attr("d", lineFunc([
                     {
                         x: __.margin.left,
-                        y: __.height / 2 - __.yScale(values[0].q[1])
+                        y: __.height / 2 - __.yScale(values[0].y)
                     },
                     {
-                        x: __.xScale(__.highlighted / __.width),
-                        y: __.height / 2 - __.yScale(values[0].q[1])
+                        x: __.xScale(values[0].x),
+                        y: __.height / 2 - __.yScale(values[0].y)
                     },
                  ]))
                 .attr("stroke", "black")
@@ -350,14 +355,14 @@
 
             cp.valueGroup.append("text")
                 .attr("x", __.margin.left + 3)
-                .attr("y", __.margin.top + __.height / 2 - __.yScale(values[0].q[1]))
-                .text(round(values[0].q[1], 2), 1)
+                .attr("y", __.margin.top + __.height / 2 - __.yScale(values[0].y))
+                .text("max : " + round(values[0].y, 2), 1)
                 .style("font-size", 8 + "px");
 
             cp.valueGroup.append("text")
                 .attr("x", __.margin.left + 3)
-                .attr("y", __.margin.top + __.height / 2 + __.yScale(values[1].q[1]))
-                .text(round(values[1].q[1], 2), 1)
+                .attr("y", __.margin.top + __.height / 2 + __.yScale(values[1].y))
+                .text("max : " + round(values[1].y, 2), 1)
                 .style("font-size", 8 + "px");
 
             return cp;
@@ -425,7 +430,7 @@
 
                 cp.titleGroup.append("text")
                     .attr("x", __.margin.left + 3)
-                    .attr("y", __.margin.top)
+                    .attr("y", __.margin.top * 2)
                     .text(title)
                     .style("font-weight", "bold")
                     .style("font-size", 10 + "px");

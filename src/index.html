@@ -36,7 +36,7 @@
             <div id="scene-controls">
                 <div class="controls">CONTROLS:</div>
                 <div class="controls">Ctrl + i : Toggle Tags</div>
-                <div class="controls">Ctrl + n : Normalize Evaluations</div>
+                <div class="controls">Ctrl + x : Normalize Evaluations</div>
                 <div class="controls">Shift + m1 : Select Multiple Nodes</div>
                 <div class="controls">Esc: Clear Selected Nodes</div>
             </div>
@@ -66,6 +66,16 @@
                 <input id="evals-slider-input-0" class="slider-input" type="range" min="0" multiple value="5" max="23" step="1" list="evals-slider-settings"/>
                 <input id="evals-slider-input-1" class="slider-input" type="range" min="0" multiple value="22" max="23" step="1" list="evals-slider-settings" />
                 <div id="evals-time">05:00:00 to 23:00:00</div>
+            </div>
+            <div id="legend-frame">
+                <div class="legend-box">
+                    <div id="legend0-color" class="legend-color"></div>
+                    <input id="legend0-input" class="legend-input" type="file" name="data0" accept="*.csv" disabled>
+                </div>
+                <div class="legend-box">
+                    <div id="legend1-color" class="legend-color"></div>
+                    <input id="legend1-input" class="legend-input" type="file" name="data1" accept="*.csv" disabled>
+                </div>
             </div>
         </div>
     </div>

@@ -161,16 +161,6 @@ function Model() {
         return _dataNodeLocationTypes;
     };
 
-    this.setDataNodeLocationTypeValues = function (value) {
-
-        _dataNodeLocationTypeValues = value;
-    };
-
-    this.getDataNodeLocationTypeValues = function () {
-
-        return _dataNodeLocationTypeValues;
-    };
-
     this.getDataNodeNames = function () {
 
         return _dataNodeNames;
@@ -185,6 +175,21 @@ function Model() {
 
         return _dxf;
     };
+
+    this.getDataNodeNamesArr = function() {
+
+        var dataTypes = this.getDataNodeNames(),
+            __ = [];
+
+        for (var type in dataTypes) {
+
+            if (dataTypes[type].length > 1) {
+                __.push(type);
+            }
+        }
+
+        return __;
+    }
 
     this.getDataFormatted = function () {
 
